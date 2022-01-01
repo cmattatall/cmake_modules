@@ -27,4 +27,14 @@ package_add_library(
     $<TARGET_OBJECTS:my_target_objects>
 )
 
+
+package_add(my_create_lib_pkg ${PROJECT_VERSION})
+
+set(srcs "src/src1.cpp;src/src2.cpp")
+package_create_libraries(
+    TARGET foobar_target
+    PACKAGE my_create_lib_pkg
+    SOURCES ${srcs}
+)
+
 include(cpack/cpack)
