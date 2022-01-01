@@ -179,12 +179,9 @@ function(package_add_library)
 
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
-        SOURCES
     )
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
-        PUBLIC_INCLUDE_DIRECTORIES
-        PRIVATE_INCLUDE_DIRECTORIES
     )
 
     ##########################
