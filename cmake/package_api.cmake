@@ -156,7 +156,7 @@ endfunction(package_add PACKAGE VERSION)
 #    TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
 # )
 function(package_add_library)
-    message(VERBOSE "${CMAKE_CURRENT_FUNCTION} args: ${ARGN}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
     ############################################################################
@@ -211,9 +211,9 @@ function(package_add_library)
     # we would set BAR-DEFAULT.
     set(TARGET_TYPE-DEFAULT SHARED)
 
-    if(DEFINED ${PROJECT_VERSION})
+    if(DEFINED PROJECT_VERSION)
         set(VERSION-DEFAULT ${PROJECT_VERSION})
-    endif(DEFINED ${PROJECT_VERSION})
+    endif(DEFINED PROJECT_VERSION)
 
     ############################################################################
     # Perform the argument parsing                                             #
@@ -221,12 +221,12 @@ function(package_add_library)
     set(SINGLE_VALUE_ARGS)
     list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
-    message(DEBUG "SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
 
     set(MULTI_VALUE_ARGS)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
-    message(DEBUG "MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
 
     cmake_parse_arguments(""
@@ -250,7 +250,7 @@ function(package_add_library)
         set(ARG_VALUE ${_${arg}})
         if(NOT DEFINED ARG_VALUE)
             if(DEFINED ${arg}-DEFAULT)
-                message(WARNING "Required keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
                 set(_${arg} ${${arg}-DEFAULT})
             else()
                 if(${arg} IN_LIST SINGLE_VALUE_ARGS-REQUIRED)
@@ -293,16 +293,17 @@ function(package_add_library)
 
     package_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
 
+    if(DEFINED _VERSION)
+        set_target_properties(${_TARGET} PROPERTIES VERSION "${_VERSION}")
+        if(_TARGET_TYPE STREQUAL SHARED)
+            set_target_properties(${_TARGET} PROPERTIES SOVERSION "${_VERSION}")    
+        endif(_TARGET_TYPE STREQUAL SHARED)
+    endif(DEFINED _VERSION)
+
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
         message(STATUS "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
     else()
-
-
-        if(DEFINED _VERSION)
-            message(WARNING "VERSION IS DEFINED")
-        endif(DEFINED _VERSION)
-
 
         # After the target is installed, if another project or target imports it
         # the header directories will have to be searched for in the 
@@ -320,7 +321,6 @@ function(package_add_library)
         )
 
         package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-        message("PACKAGE_INSTALL_CMAKE_DIR=${PACKAGE_INSTALL_CMAKE_DIR}")
         package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
         package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
         install(
@@ -337,7 +337,7 @@ endfunction(package_add_library)
 
 
 function(package_create_libraries)
-    message(VERBOSE "${CMAKE_CURRENT_FUNCTION} args: ${ARGN}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
     ############################################################################
@@ -390,12 +390,12 @@ function(package_create_libraries)
     set(SINGLE_VALUE_ARGS)
     list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
-    message(DEBUG "SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
 
     set(MULTI_VALUE_ARGS)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
-    message(DEBUG "MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
@@ -418,7 +418,7 @@ function(package_create_libraries)
         set(ARG_VALUE ${_${arg}})
         if(NOT DEFINED ARG_VALUE)
             if(DEFINED ${arg}-DEFAULT)
-                message(WARNING "Required keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
                 set(_${arg} ${${arg}-DEFAULT})
             else()
                 if(${arg} IN_LIST SINGLE_VALUE_ARGS-REQUIRED)

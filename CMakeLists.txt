@@ -23,6 +23,7 @@ package_add_library(
     TARGET my_target 
     PACKAGE my_package
     TARGET_TYPE SHARED
+    VERSION 0.0.1
     $<TARGET_OBJECTS:my_target_objects>
 )
 
