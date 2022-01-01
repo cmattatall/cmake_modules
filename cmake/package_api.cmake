@@ -165,6 +165,9 @@ function(package_add_library)
         # ADD YOUR OPTIONAL ARGUMENTS
     )
 
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
     set(SINGLE_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
         PACKAGE
@@ -176,7 +179,9 @@ function(package_add_library)
         # Add your argument keywords here
     )
 
-
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
     )
@@ -192,12 +197,14 @@ function(package_add_library)
     # If we wanted to restrict values 
     # for a keyword FOO, we would set a 
     # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
     set(TARGET_TYPE-CHOICES 
         OBJECT 
         STATIC 
         SHARED
         INTERFACE
-    )
+    )    
+    
 
     ##########################
     # CONFIGURE DEFAULTS FOR #
@@ -206,6 +213,7 @@ function(package_add_library)
     # The naming is very specific. 
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
     set(TARGET_TYPE-DEFAULT SHARED)
 
     if(DEFINED PROJECT_VERSION)
@@ -343,6 +351,9 @@ function(package_create_libraries)
         # Add optional (boolean) arguments here
     )
 
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
     set(SINGLE_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
         PACKAGE
@@ -352,11 +363,13 @@ function(package_create_libraries)
         # Add your argument keywords here
     )
     
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
         SOURCES
     )
-
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
         PUBLIC_INCLUDE_DIRECTORIES
@@ -372,6 +385,7 @@ function(package_create_libraries)
     # If we wanted to restrict values 
     # for a keyword FOO, we would set a 
     # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
 
     ##########################
     # CONFIGURE DEFAULTS FOR #
@@ -380,6 +394,7 @@ function(package_create_libraries)
     # The naming is very specific. 
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
 
     ############################################################################
     # Perform the argument parsing                                             #
