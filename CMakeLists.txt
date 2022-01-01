@@ -12,12 +12,18 @@ include(package_api)
 package_add(my_package ${PROJECT_VERSION})
 
 package_add_library(
+    TARGET my_target_objects
+    PACKAGE my_package
+    TARGET_TYPE OBJECT
+)
+target_sources(my_target_objects PRIVATE src/foo.cpp)
+
+
+package_add_library(
     TARGET my_target 
     PACKAGE my_package
-    TARGET_TYPE INTERFACE
+    TARGET_TYPE SHARED
+    $<TARGET_OBJECTS:my_target_objects>
 )
-
-
-target_sources(my_target PRIVATE src/foo.cpp)
 
 include(cpack/cpack)
