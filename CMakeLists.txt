@@ -30,7 +30,10 @@ package_add_library(
 
 package_add(my_create_lib_pkg ${PROJECT_VERSION})
 
-set(srcs "src/src1.cpp;src/src2.cpp")
+set(srcs 
+    src/src1.cpp;
+    src/src2.cpp
+)
 package_create_libraries(
     TARGET foobar_target
     PACKAGE my_create_lib_pkg
