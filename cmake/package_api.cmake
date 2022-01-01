@@ -470,7 +470,7 @@ function(package_create_libraries)
     set(SHARED_LIBRARY_TARGET_NAME ${_TARGET}-shared)
 
     package_add_library(
-        PACKAGE ${PACKAGE}
+        PACKAGE ${_PACKAGE}
         TARGET ${OBJECT_LIBRARY_TARGET_NAME}
         TARGET_TYPE OBJECT
     )
@@ -478,14 +478,14 @@ function(package_create_libraries)
 
 
     package_add_library(
-        PACKAGE ${PACKAGE}
+        PACKAGE ${_PACKAGE}
         TARGET ${SHARED_LIBRARY_TARGET_NAME}
         TARGET_TYPE SHARED
         $<TARGET_OBJECTS:${OBJECT_LIBRARY_TARGET_NAME}>
     )
 
     package_add_library(
-        PACKAGE ${PACKAGE}
+        PACKAGE ${_PACKAGE}
         TARGET ${STATIC_LIBRARY_TARGET_NAME}
         TARGET_TYPE SHARED
         $<TARGET_OBJECTS:${OBJECT_LIBRARY_TARGET_NAME}>
