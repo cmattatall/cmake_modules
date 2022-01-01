@@ -3,61 +3,68 @@ cmake_minimum_required(VERSION 3.21)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
+    # Do not call package_check_exists(). We use the version file to actually check if the package exists.
+    set(${OUT_package_version_file_path} "${CMAKE_BINARY_DIR}/${PACKAGE}Version.cmake" PARENT_SCOPE)
+endfunction(package_get_version_file_path PACKAGE OUT_package_version_file_path)
+
+
 function(package_get_targets_export_name PACKAGE OUT_export_name)
-    set(OUT_export_name "${PACKAGE}Targets" PARENT_SCOPE)
+    package_check_exists(${PACKAGE})
+    set(${OUT_export_name} "${PACKAGE}Targets" PARENT_SCOPE)
 endfunction(package_get_targets_export_name PACKAGE OUT_export_name)
 
 
 function(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
-    set(OUT_package_targets_namespace "${PACKAGE}" PARENT_SCOPE)
+    package_check_exists(${PACKAGE})
+    set(${OUT_package_targets_namespace} "${PACKAGE}" PARENT_SCOPE)
 endfunction(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
 
 
 function(package_get_config_file_path PACKAGE OUT_package_config_file_path)
-    set(OUT_package_config_file_path "${CMAKE_BINARY_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
+    package_check_exists(${PACKAGE})
+    set(${OUT_package_config_file_path} "${CMAKE_BINARY_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
 endfunction(package_get_config_file_path PACKAGE OUT_package_config_file_path)
 
 
-function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
-    set(OUT_package_version_file_path "${CMAKE_BINARY_DIR}/${PACKAGE}Version.cmake" PARENT_SCOPE)
-endfunction(package_get_version_file_path PACKAGE OUT_package_version_file_path)
-
-
 function(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
-    set(OUT_cmake_files_install_destination "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/")
+    package_check_exists(${PACKAGE})
+    set(${OUT_cmake_files_install_destination} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
 endfunction(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
 
 
-function(package_get_metadata_file_location PACKAGE OUT_package_metadata_file_location)
-    set(OUT_package_metadata_file_location "${CMAKE_BINARY_DIR}/packages/${PACKAGE}.cmake")
-endfunction(package_get_metadata_file_location PACKAGE OUT_package_metadata_file_location)
+function(package_check_exists PACKAGE)
+    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
+    if(NOT EXISTS ${PACKAGE_VERSION_FILE})
+        message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGN}. Reason: package: \"${PACKAGE}\" does not exist.")
+    endif(NOT EXISTS ${PACKAGE_VERSION_FILE})
+endfunction(package_check_exists PACKAGE)
 
-
-function(package_write_metadata_file PACKAGE VERSION)
-    package_get_metadata_file_location(${PACKAGE} PACKAGE_META_FILE)
-    get_filename_component(PACKAGE_METADATA_FILE_DIR ${PACKAGE_META_FILE} DIRECTORY)
-    if(NOT EXISTS ${PACKAGE_METADATA_FILE_DIR})
-        file(MAKE_DIRECTORY ${PACKAGE_METADATA_FILE_DIR})
-    endif(NOT EXISTS ${PACKAGE_METADATA_FILE_DIR})
-    file(WRITE 
-        ${PACKAGE_META_FILE}
-        "set(PACKAGE_VERSION \${PACKAGE_VERSION})\n"
-    )
-endfunction(package_write_metadata_file PACKAGE VERSION)
-
+function(package_get_exists PACKAGE OUT_package_exists)
+    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
+    if(NOT EXISTS ${PACKAGE_VERSION_FILE})
+        set(${OUT_package_exists} 0 PARENT_SCOPE)
+    else()
+        set(${OUT_package_exists} 1 PARENT_SCOPE)
+    endif(NOT EXISTS ${PACKAGE_VERSION_FILE})
+endfunction(package_get_exists PACKAGE OUT_package_exists)
 
 
 
 function(package_add PACKAGE VERSION)
-    package_write_metadata_file(${PACKAGE} ${VERSION})
-    package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_exists(${PACKAGE} PACKAGE_EXISTS)
+    if(PACKAGE_EXISTS)
+        return()
+    endif(PACKAGE_EXISTS)
+    
     package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
-
     write_basic_package_version_file(
         ${PACKAGE_VERSION_FILE} 
         VERSION ${VERSION} 
         COMPATIBILITY AnyNewerVersion
     )
+
+    package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_VERSION_FILE}
         PERMISSIONS
@@ -76,6 +83,8 @@ function(package_add PACKAGE VERSION)
         ${PACKAGE_CONFIG_FILE}
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
+
+    #[[
     install(
         FILES ${PACKAGE_CONFIG_FILE}
         PERMISSIONS
@@ -85,7 +94,9 @@ function(package_add PACKAGE VERSION)
         DESTINATION ${PACKAGE_CMAKE_FILES_INSTALL_DESTINATION}
         COMPONENT cmake
     )
+    #]]
 
+    #[[
     package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
     package_get_targets_namespace(${PACKAGE} PACKAGE_NAMESPACE)
     install(
@@ -94,6 +105,7 @@ function(package_add PACKAGE VERSION)
         DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
         COMPONENT cmake
     )
+    #]]
 endfunction(package_add PACKAGE VERSION)
 
 
@@ -143,7 +155,6 @@ function(package_add_library)
     # Ensure caller has provided required args
     foreach(arg ${SINGLE_VALUE_ARGS})
         set(ARG_VALUE ${_${arg}})
-        message("ARG_VALUE:${ARG_VALUE}")
         if(NOT DEFINED ARG_VALUE)
             message(FATAL_ERROR "Keyword argument: \"${arg}\" not provided")
         else()
@@ -203,6 +214,15 @@ function(package_add_library)
             EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
             DESTINATION ${CMAKE_INSTALL_LIBDIR}/${_PACKAGE}
             COMPONENT lib
+        )
+
+        package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
+        package_get_targets_namespace(${PACKAGE} PACKAGE_NAMESPACE)
+        install(
+            EXPORT ${PACKAGE_EXPORT_NAME}
+            NAMESPACE ${PACKAGE_NAMESPACE}::
+            DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+            COMPONENT cmake
         )
     endif(_TARGET_TYPE STREQUAL OBJECT)
     
