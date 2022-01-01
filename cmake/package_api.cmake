@@ -491,4 +491,15 @@ function(package_create_libraries)
         $<TARGET_OBJECTS:${OBJECT_LIBRARY_TARGET_NAME}>
     )
 
+    if(DEFINED _PUBLIC_INCLUDE_DIRECTORIES)
+        target_include_directories(${STATIC_LIBRARY_TARGET_NAME} PUBLIC ${_PUBLIC_INCLUDE_DIRECTORIES} )
+        target_include_directories(${SHARED_LIBRARY_TARGET_NAME} PUBLIC ${_PUBLIC_INCLUDE_DIRECTORIES} )
+    endif(DEFINED _PUBLIC_INCLUDE_DIRECTORIES)
+
+
+    if(DEFINED _PRIVATE_INCLUDE_DIRECTORIES)
+        target_include_directories(${STATIC_LIBRARY_TARGET_NAME} PRIVATE ${_PRIVATE_INCLUDE_DIRECTORIES} )
+        target_include_directories(${SHARED_LIBRARY_TARGET_NAME} PRIVATE ${_PRIVATE_INCLUDE_DIRECTORIES} )
+    endif(DEFINED _PRIVATE_INCLUDE_DIRECTORIES)
+
 endfunction(package_create_libraries)
