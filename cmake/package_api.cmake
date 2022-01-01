@@ -3,10 +3,68 @@ cmake_minimum_required(VERSION 3.21)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+
+function(package_get_packages_listfile OUT_packages_listfile)
+    set(${OUT_packages_listfile} ${CMAKE_BINARY_DIR}/package-list.txt PARENT_SCOPE) # top level of build tree
+endfunction(package_get_packages_listfile OUT_packages_listfile)
+
+
+function(package_get_exists PACKAGE OUT_package_exists)
+    package_get_packages_listfile(PACKAGE_LISTFILE)
+    set(${OUT_package_exists} 0 PARENT_SCOPE)
+    if(EXISTS ${PACKAGE_LISTFILE})
+        file(STRINGS ${PACKAGE_LISTFILE} PACKAGE_LIST)
+        list(LENGTH PACKAGE_LIST PACKAGE_COUNT)
+        if(PACKAGE_COUNT GREATER 0)
+            if(${PACKAGE} IN_LIST PACKAGE_LIST)
+                set(${OUT_package_exists} 1 PARENT_SCOPE)
+            endif(${PACKAGE} IN_LIST PACKAGE_LIST)
+        endif(PACKAGE_COUNT GREATER 0)
+    else()
+        # Create the empty file
+        file(TOUCH ${PACKAGE_LISTFILE})
+    endif(EXISTS ${PACKAGE_LISTFILE})
+endfunction(package_get_exists PACKAGE OUT_package_exists)
+
+
+function(package_check_exists PACKAGE)
+    package_get_exists(${PACKAGE} PACKAGE_EXISTS)
+    message("PACKAGE_EXISTS=${PACKAGE_EXISTS}")
+    if(NOT PACKAGE_EXISTS)
+        message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGN}. Reason: package: \"${PACKAGE}\" does not exist.")
+    endif(NOT PACKAGE_EXISTS)
+endfunction(package_check_exists PACKAGE)
+
+
+function(package_get_staging_dir PACKAGE OUT_package_staging_dir)
+    package_check_exists(${PACKAGE})
+    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/packages/${PACKAGE}/")
+    get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
+    message("PARENT_PACKAGE_STAGING_DIR=${PARENT_PACKAGE_STAGING_DIR}")
+    if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
+        file(MAKE_DIRECTORY ${PARENT_PACKAGE_STAGING_DIR})
+    endif(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
+    set(${OUT_package_staging_dir} ${PACKAGE_STAGING_DIR} PARENT_SCOPE)
+endfunction(package_get_staging_dir PACKAGE OUT_package_staging_dir)
+
+
+function(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_staging_dir)
+    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    set(${OUT_package_cmake_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/cmake" PARENT_SCOPE)
+endfunction(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_staging_dir)
+
+
 function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
-    # Do not call package_check_exists(). We use the version file to actually check if the package exists.
-    set(${OUT_package_version_file_path} "${CMAKE_BINARY_DIR}/${PACKAGE}Version.cmake" PARENT_SCOPE)
+    package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
+    set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}Version.cmake" PARENT_SCOPE)
 endfunction(package_get_version_file_path PACKAGE OUT_package_version_file_path)
+
+
+function(package_get_config_file_path PACKAGE OUT_package_config_file_path)
+    package_check_exists(${PACKAGE})
+    package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
+    set(${OUT_package_config_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
+endfunction(package_get_config_file_path PACKAGE OUT_package_config_file_path)
 
 
 function(package_get_targets_export_name PACKAGE OUT_export_name)
@@ -21,10 +79,7 @@ function(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
 endfunction(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
 
 
-function(package_get_config_file_path PACKAGE OUT_package_config_file_path)
-    package_check_exists(${PACKAGE})
-    set(${OUT_package_config_file_path} "${CMAKE_BINARY_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
-endfunction(package_get_config_file_path PACKAGE OUT_package_config_file_path)
+
 
 
 function(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
@@ -33,28 +88,15 @@ function(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_ins
 endfunction(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
 
 
-function(package_check_exists PACKAGE)
-    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
-    if(NOT EXISTS ${PACKAGE_VERSION_FILE})
-        message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGN}. Reason: package: \"${PACKAGE}\" does not exist.")
-    endif(NOT EXISTS ${PACKAGE_VERSION_FILE})
-endfunction(package_check_exists PACKAGE)
-
-function(package_get_exists PACKAGE OUT_package_exists)
-    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
-    if(NOT EXISTS ${PACKAGE_VERSION_FILE})
-        set(${OUT_package_exists} 0 PARENT_SCOPE)
-    else()
-        set(${OUT_package_exists} 1 PARENT_SCOPE)
-    endif(NOT EXISTS ${PACKAGE_VERSION_FILE})
-endfunction(package_get_exists PACKAGE OUT_package_exists)
-
 
 
 function(package_add PACKAGE VERSION)
     package_get_exists(${PACKAGE} PACKAGE_EXISTS)
     if(PACKAGE_EXISTS)
         return()
+    else()
+        package_get_packages_listfile(PACKAGE_LISTFILE)
+        file(APPEND ${PACKAGE_LISTFILE} "${PACKAGE}\n")
     endif(PACKAGE_EXISTS)
     
     package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
@@ -83,6 +125,7 @@ function(package_add PACKAGE VERSION)
         ${PACKAGE_CONFIG_FILE}
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
+    file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
 
     #[[
     install(

@@ -5,12 +5,16 @@ project(foo
 )
 
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(package_api)
 
 
 package_add(my_package ${PROJECT_VERSION})
+package_add(my_package ${PROJECT_VERSION})
+package_add(my_package ${PROJECT_VERSION})
+package_add(my_package ${PROJECT_VERSION})
+
 
 package_add_library(
     TARGET my_target 
@@ -20,3 +24,5 @@ package_add_library(
 
 
 target_sources(my_target PRIVATE src/foo.cpp)
+
+include(cpack/cpack)
