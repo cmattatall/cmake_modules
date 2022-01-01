@@ -8,4 +8,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}")
 include(package_api)
 
 
-package_add_library(PACKAGE my_package TARGET my_target TARGET_TYPE OBJECT_FOO)
+package_add_library(
+    TARGET my_target 
+    PACKAGE my_package
+    TARGET_TYPE OBJECT
+)
+
+target_sources(my_target PRIVATE src/foo.cpp)
