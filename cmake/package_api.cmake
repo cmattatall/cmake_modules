@@ -29,7 +29,6 @@ endfunction(package_get_exists PACKAGE OUT_package_exists)
 
 function(package_check_exists PACKAGE)
     package_get_exists(${PACKAGE} PACKAGE_EXISTS)
-    message("PACKAGE_EXISTS=${PACKAGE_EXISTS}")
     if(NOT PACKAGE_EXISTS)
         message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGN}. Reason: package: \"${PACKAGE}\" does not exist.")
     endif(NOT PACKAGE_EXISTS)
@@ -38,7 +37,7 @@ endfunction(package_check_exists PACKAGE)
 
 function(package_get_staging_dir PACKAGE OUT_package_staging_dir)
     package_check_exists(${PACKAGE})
-    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/packages/${PACKAGE}/")
+    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}/")
     get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
     message("PARENT_PACKAGE_STAGING_DIR=${PARENT_PACKAGE_STAGING_DIR}")
     if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
@@ -177,6 +176,7 @@ function(package_add_library)
         OBJECT 
         STATIC 
         SHARED
+        INTERFACE
     )
 
     cmake_parse_arguments(""
@@ -237,21 +237,24 @@ function(package_add_library)
 
     add_library(${_TARGET} ${_TARGET_TYPE})
 
-    # After the target is installed, if another project or target imports it
-    # the header directories will have to be searched for in the 
-    # system install tree and not the current build tree
-    target_include_directories(${_TARGET} 
-        PUBLIC 
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${_PACKAGE}>
-    )
+    message("ARGN=${ARGN}")
 
 
     package_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
 
-    # Don't install object libraries
-    if(_TARGET_TYPE STREQUAL OBJECT)
+    # Don't install object or interface libraries
+    if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
         message(STATUS "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
     else()
+
+        # After the target is installed, if another project or target imports it
+        # the header directories will have to be searched for in the 
+        # system install tree and not the current build tree
+        target_include_directories(${_TARGET} 
+        PUBLIC 
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${_PACKAGE}>
+        )
+
         install(
             TARGETS ${_TARGET}
             EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
@@ -267,7 +270,7 @@ function(package_add_library)
             DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
             COMPONENT cmake
         )
-    endif(_TARGET_TYPE STREQUAL OBJECT)
+    endif()
     
 endfunction(package_add_library)
 

@@ -6,20 +6,15 @@ project(foo
 
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 include(package_api)
 
 
 package_add(my_package ${PROJECT_VERSION})
-package_add(my_package ${PROJECT_VERSION})
-package_add(my_package ${PROJECT_VERSION})
-package_add(my_package ${PROJECT_VERSION})
-
 
 package_add_library(
     TARGET my_target 
     PACKAGE my_package
-    TARGET_TYPE OBJECT
+    TARGET_TYPE INTERFACE
 )
 
 
