@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.21)
 
 set(CPACK_VERBATIM_VARIABLES YES)
 
-#set(CPACK_COMPONENTS_GROUPING ONE_PER_GROUP) # use this if want 1 debian package per cmake install component
-set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE) # use this if want 1 debian package for all cmake install components
+set(CPACK_COMPONENTS_GROUPING ONE_PER_GROUP) # use this if want 1 debian package per cmake install component
+#set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE) # use this if want 1 debian package for all cmake install components
 
 # https://cmake.org/cmake/help/latest/variable/CPACK_SET_DESTDIR.html
 set(CPACK_SET_DESTDIR OFF)
