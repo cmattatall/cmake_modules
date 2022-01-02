@@ -54,7 +54,7 @@ endfunction(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_
 
 function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
     package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
-    set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}Version.cmake" PARENT_SCOPE)
+    set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
 endfunction(package_get_version_file_path PACKAGE OUT_package_version_file_path)
 
 
