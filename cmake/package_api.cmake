@@ -121,18 +121,16 @@ function(package_add PACKAGE VERSION)
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
     file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
-
-    #[[
+    package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_CONFIG_FILE}
         PERMISSIONS
             OWNER_WRITE OWNER_READ
             GROUP_READ
             WORLD_READ        
-        DESTINATION ${PACKAGE_CMAKE_FILES_INSTALL_DESTINATION}
+        DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
         COMPONENT cmake
     )
-    #]]
 
     #[[
     package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
