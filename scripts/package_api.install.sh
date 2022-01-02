@@ -16,19 +16,26 @@ function install () {
     local BUILD_DIR="$(realpath ${WORKDIR})/build"
     if [ -d "${BUILD_DIR}" ]; then 
         rm -r "${BUILD_DIR}"
-
+        sync
     fi
     mkdir "${BUILD_DIR}"
+    sync
     cmake -S . -B "${BUILD_DIR}" --log-level=debug 
     cmake --build "${BUILD_DIR}"
     cd "${BUILD_DIR}"
     cpack
     cd "${WORKDIR}"
-    for DEBIAN_PKG in $(find ${WORKDIR}/build/packages/ -name "*\.deb"); do
+
+    local PKG_OUTPUT_DIR="${BUILD_DIR}/packages"
+    for DEBIAN_PKG in $(find ${PKG_OUTPUT_DIR} -name "*\.deb"); do
         local PKG_DIR=$(dirname ${DEBIAN_PKG})
-        dpkg -x "${DEBIAN_PKG}" "${PKG_DIR}"
-        tree "${PKG_DIR}"
+        local EXTRACT_DIR="${PKG_DIR}/$(basename ${DEBIAN_PKG} | awk 'BEGIN { FS = "." } ; { print $1 }' | awk 'BEGIN {FS = "-"}; {print $1}')"
+        [ -d "${EXTRACT_DIR}" ] && rm -r "${EXTRACT_DIR}" && sync
+        mkdir -p "${EXTRACT_DIR}"
+        dpkg -x "${DEBIAN_PKG}" "${EXTRACT_DIR}"
+        #sudo dpkg -i "${DEBIAN_PKG}"
     done
+    tree "${PKG_OUTPUT_DIR}"
 }
 
 function main () {
