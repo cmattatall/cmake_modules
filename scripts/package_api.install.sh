@@ -24,10 +24,10 @@ function install () {
     cd "${BUILD_DIR}"
     cpack
     cd "${WORKDIR}"
-    for TARBALL in $(find build -name "*\.tar\.gz"); do
-        local TARBALL_DIR=$(dirname ${TARBALL})
-        tar -xvf ${TARBALL} -C "${TARBALL_DIR}"
-        tree "${TARBALL_DIR}"
+    for DEBIAN_PKG in $(find ${WORKDIR}/build/packages/ -name "*\.deb"); do
+        local PKG_DIR=$(dirname ${DEBIAN_PKG})
+        dpkg -x "${DEBIAN_PKG}" "${PKG_DIR}"
+        tree "${PKG_DIR}"
     done
 }
 
