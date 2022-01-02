@@ -9,25 +9,28 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(package_api)
 
 
-package_add(my_package ${PROJECT_VERSION})
 
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
-set(sources 
-    src/foo.cpp
-)
-
+package_add(foo ${PROJECT_VERSION})
 package_add_library(
-    TARGET my_target_objects
-    PACKAGE my_package
+    TARGET foo_target_objects
+    PACKAGE foo
     TARGET_TYPE OBJECT
 )
-target_sources(my_target_objects PRIVATE ${sources})
+target_sources(foo_target_objects PRIVATE src/foo.cpp)
+target_include_directories(foo_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(foo_target_objects PUBLIC ${JSONCPP_LIBRARIES})
 
-target_include_directories(my_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
-target_link_libraries(my_target_objects PUBLIC ${JSONCPP_LIBRARIES})
+package_add_library(
+    TARGET foo_target 
+    PACKAGE foo
+    TARGET_TYPE SHARED
+    $<TARGET_OBJECTS:foo_target_objects>
+)
+
 
 
 package_add_library(
