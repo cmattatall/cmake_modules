@@ -1,4 +1,4 @@
-#include <my_package/foo.h>
+#include <foo/foo.hpp>
 
 int main(int argc, char **argv) {
   foo();
