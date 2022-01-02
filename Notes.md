@@ -4,5 +4,5 @@ configure, build, cpack, and uncompress the package before printing the
 directory structure of the decompressed output. If this command is not invoked
 from the directory "build", first a directory called "build" is created and entered.
 ```sh
-if [ $(basename $(realpath $(pwd))) == "build" ]; then rm -r ./*; echo "in build tree"; elif  [ -f "$(realpath $(pwd))/.gitignore" ]; then mkdir build && pushd build; fi; cmake ../ && make && cpack && pushd packages && find . -name "*\.tar\.gz" -exec tar -xf {} -C . \; && tree; popd
+if [ $(basename $(realpath $(pwd))) == "build" ]; then rm -r ./*; echo "in build tree"; elif  [ -f "$(realpath $(pwd))/.gitignore" ]; then mkdir build && cd build; fi; cmake ../ && make && cpack && cd packages && find . -name "*\.tar\.gz" -exec tar -xf {} -C . \; && tree; cd ..
 ```
