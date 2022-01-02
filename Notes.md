@@ -6,3 +6,8 @@ from the directory "build", first a directory called "build" is created and ente
 ```sh
 if [ $(basename $(realpath $(pwd))) == "build" ]; then rm -r ./*; echo "in build tree"; elif  [ -f "$(realpath $(pwd))/.gitignore" ]; then if [ -d "$(realpath $(pwd))/build" ]; then rm -r "$(realpath $(pwd))/build"; fi; mkdir build && cd build; fi; cmake ../ --log-level=debug && make && cpack && cd packages && find . -name "*\.tar\.gz" -exec tar -xf {} -C . \; && tree; cd ../../
 ```
+
+# TODO
+
+[ ] We need to fix the transient dependencies using SHLIBDEPS and properly write them to the config file content.
+    
