@@ -32,15 +32,23 @@ package_add_library(
 )
 
 
-
+#[[
+package_add(bar ${PROJECT_VERSION})
 package_add_library(
-    TARGET my_target 
-    PACKAGE my_package
-    TARGET_TYPE SHARED
-    VERSION 0.0.1
-    $<TARGET_OBJECTS:my_target_objects>
+    TARGET bar_target_objects
+    PACKAGE bar
+    TARGET_TYPE OBJECT
 )
-
+target_sources(bar_target_objects PRIVATE src/bar.cpp)
+target_include_directories(bar_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(bar_target_objects PUBLIC ${JSONCPP_LIBRARIES})
+package_add_library(
+    TARGET bar_target 
+    PACKAGE bar
+    TARGET_TYPE SHARED
+    $<TARGET_OBJECTS:bar_target_objects>
+)
+#]]
 
 #[[
 package_add(my_create_lib_pkg ${PROJECT_VERSION})
