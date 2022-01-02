@@ -42,9 +42,6 @@ set(CPACK_PACKAGING_INSTALL_PREFIX "/usr") # Sorry windows folks
 set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
 set(CPACK_OUTPUT_FILE_PREFIX "${PROJECT_BINARY_DIR}/packages")
 
-# CONFIGURE VARIOUS CPACK GENERATORS
-include(cpack/cpack_tgz)
-
 
 function(package_update_generators)
     foreach(GENERATOR ${CPACK_GENERATOR})
@@ -57,35 +54,43 @@ function(package_update_generators)
 endfunction(package_update_generators)
 
 
-function(package_create_deb)
-    include(cpack/cpack_deb)
+function(package_create_tgz)
+    include(packaging/cpack_tgz)
     package_update_generators()
+endfunction(package_create_tgz)
+
+
+function(package_create_deb)
+    include(packaging/cpack_deb)
+    package_update_generators()
+    message(WARNING "${CMAKE_CURRENT_FUNCTION}, CPACK_GENERATOR:${CPACK_GENERATOR}")
 endfunction(package_create_deb)
 
 
 function(package_create_rpm)
-    include(cpack/cpack_rpm)
+    include(packaging/cpack_rpm)
     package_update_generators()
 endfunction(package_create_rpm)
 
 
 function(package_create_zip)
-    include(cpack/cpack_zip)
+    include(packaging/cpack_zip)
     package_update_generators()
 endfunction(package_create_zip)
 
 
 function(package_create_all)
-    package_create_deb()
+    package_create_tgz()
     package_create_zip()
+    package_create_deb()
     package_create_rpm()
 endfunction(package_create_all)
-
-
-
 
 
 
 #include(packaging/cpack_postinst)
 include(InstallRequiredSystemLibraries)
 include(CPack)
+
+
+message("CPACK_GENERATOR:${CPACK_GENERATOR}")
