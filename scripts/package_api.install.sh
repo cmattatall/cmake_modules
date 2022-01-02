@@ -33,7 +33,7 @@ function install () {
         [ -d "${EXTRACT_DIR}" ] && rm -r "${EXTRACT_DIR}" && sync
         mkdir -p "${EXTRACT_DIR}"
         dpkg -x "${DEBIAN_PKG}" "${EXTRACT_DIR}"
-        #sudo dpkg -i "${DEBIAN_PKG}"
+        sudo dpkg -i "${DEBIAN_PKG}"
     done
     tree "${PKG_OUTPUT_DIR}"
 }
