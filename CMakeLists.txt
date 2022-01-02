@@ -11,12 +11,18 @@ include(package_api)
 
 package_add(my_package ${PROJECT_VERSION})
 
+set(sources 
+    src/foo.cpp
+    src/src1.cpp
+    src/src2.cpp
+)
+
 package_add_library(
     TARGET my_target_objects
     PACKAGE my_package
     TARGET_TYPE OBJECT
 )
-target_sources(my_target_objects PRIVATE src/foo.cpp)
+target_sources(my_target_objects PRIVATE ${sources})
 
 
 package_add_library(
@@ -28,16 +34,14 @@ package_add_library(
 )
 
 
+#[[
 package_add(my_create_lib_pkg ${PROJECT_VERSION})
 
-set(srcs 
-    src/src1.cpp;
-    src/src2.cpp
-)
 package_create_libraries(
     TARGET foobar_target
     PACKAGE my_create_lib_pkg
-    SOURCES ${srcs}
+    SOURCES ${sources}
 )
+#]]
 
 include(cpack/cpack)
