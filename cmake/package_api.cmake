@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(packaging/cpack)
 
 
 function(package_get_packages_listfile OUT_packages_listfile)
@@ -97,20 +98,54 @@ endfunction(package_get_header_files_install_destination PACKAGE OUT_header_file
 
 function(package_get_header_component_name PACKAGE OUT_header_component_name)
     package_check_exists(${PACKAGE})
-    set(${OUT_header_component_name} "dev" PARENT_SCOPE)
+    set(${OUT_header_component_name} "${PACKAGE}Dev" PARENT_SCOPE)
 endfunction(package_get_header_component_name PACKAGE OUT_header_component_name)
 
 
 function(package_get_library_component_name PACKAGE OUT_library_component_name)
     package_check_exists(${PACKAGE})
-    set(${OUT_library_component_name} "lib" PARENT_SCOPE)
+    set(${OUT_library_component_name} "${PACKAGE}Lib" PARENT_SCOPE)
 endfunction(package_get_library_component_name PACKAGE OUT_library_component_name)
 
 
 function(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
     package_check_exists(${PACKAGE})
-    set(${OUT_cmake_component_name} "cmake" PARENT_SCOPE)
+    set(${OUT_cmake_component_name} "${PACKAGE}Cmake" PARENT_SCOPE)
 endfunction(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
+
+function(package_get_executable_component_name PACKAGE OUT_executable_component_name)
+    package_check_exists(${PACKAGE})
+    set(${OUT_executable_component_name} "${PACKAGE}Bin" PARENT_SCOPE)
+endfunction(package_get_executable_component_name PACKAGE OUT_executable_component_name)
+
+function(package_get_version PACKAGE OUT_package_version)
+    package_check_exists(${PACKAGE})
+    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
+    if(NOT (EXISTS ${PACKAGE_VERSION_FILE}))
+        message(FATAL_ERROR "Package version file: ${PACKAGE_VERSION_FILE} doesn't exist.")
+    endif(NOT (EXISTS ${PACKAGE_VERSION_FILE}))
+    include(${PACKAGE_VERSION_FILE})
+    set(${OUT_package_version} ${PACKAGE_VERSION} PARENT_SCOPE)
+endfunction(package_get_version PACKAGE OUT_package_version)
+
+
+function(package_get_component_list PACKAGE OUT_components_list)
+    package_check_exists(${PACKAGE})
+    
+    # Use internal API to get component names 
+    package_get_header_component_name(${PACKAGE} HEADER_COMPONENT)
+    package_get_library_component_name(${PACKAGE} LIBRARY_COMPONENT)
+    package_get_cmake_component_name(${PACKAGE} CMAKE_COMPONENT)
+    package_get_executable_component_name(${PACKAGE} EXECUTABLE_COMPONENT)
+
+
+    set(PACKAGE_COMPONENT_LIST) # empty list
+    list(APPEND PACKAGE_COMPONENT_LIST ${HEADER_COMPONENT})
+    list(APPEND PACKAGE_COMPONENT_LIST ${LIBRARY_COMPONENT})
+    list(APPEND PACKAGE_COMPONENT_LIST ${CMAKE_COMPONENT})
+    list(APPEND PACKAGE_COMPONENT_LIST ${EXECUTABLE_COMPONENT})
+    set(${OUT_components_list} ${PACKAGE_COMPONENT_LIST} PARENT_SCOPE)
+endfunction(package_get_component_list PACKAGE OUT_components_list)
 
 
 
@@ -163,16 +198,24 @@ function(package_add PACKAGE VERSION)
         COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
-    #[[
-    package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
-    package_get_targets_namespace(${PACKAGE} PACKAGE_NAMESPACE)
-    install(
-        EXPORT ${PACKAGE_EXPORT_NAME}
-        NAMESPACE ${PACKAGE_NAMESPACE}::
-        DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-        COMPONENT cmake
-    )
-    #]]
+    # Get component names
+    package_get_header_component_name(${PACKAGE} PACKAGE_HEADER_COMPONENT)
+    package_get_library_component_name(${PACKAGE} PACKAGE_LIBRARY_COMPONENT)
+    package_get_cmake_component_name(${PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    package_get_executable_component_name(${PACKAGE} PACKAGE_EXECUTABLE_COMPONENT)
+
+    # Add components to the package
+    package_add_component(${PACKAGE} ${PACKAGE_LIBRARY_COMPONENT})
+    package_add_component(${PACKAGE} ${PACKAGE_EXECUTABLE_COMPONENT})
+
+    package_add_component(${PACKAGE} ${PACKAGE_HEADER_COMPONENT})
+    package_add_component_dependency(${PACKAGE_HEADER_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
+
+    package_add_component(${PACKAGE} ${PACKAGE_CMAKE_COMPONENT})
+    package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
+    package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_EXECUTABLE_COMPONENT})
+
+    packager_configure_deb(${PACKAGE})
 endfunction(package_add PACKAGE VERSION)
 
 
@@ -204,7 +247,6 @@ function(package_add_library)
         TARGET_TYPE
     )
     set(SINGLE_VALUE_ARGS-OPTIONAL
-        VERSION
         # Add your argument keywords here
     )
 
@@ -329,12 +371,11 @@ function(package_add_library)
 
     package_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
 
-    if(DEFINED _VERSION)
-        set_target_properties(${_TARGET} PROPERTIES VERSION "${_VERSION}")
-        if(_TARGET_TYPE STREQUAL SHARED)
-            set_target_properties(${_TARGET} PROPERTIES SOVERSION "${_VERSION}")    
-        endif(_TARGET_TYPE STREQUAL SHARED)
-    endif(DEFINED _VERSION)
+    package_get_version(${_PACKAGE} PACKAGE_VERSION)
+    set_target_properties(${_TARGET} PROPERTIES VERSION "${PACKAGE_VERSION}")
+    if(_TARGET_TYPE STREQUAL SHARED)
+        set_target_properties(${_TARGET} PROPERTIES SOVERSION "${PACKAGE_VERSION}")    
+    endif(_TARGET_TYPE STREQUAL SHARED)
 
     package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
     package_get_library_component_name(${_PACKAGE} PACKAGE_LIB_COMPONENT)
@@ -358,7 +399,7 @@ function(package_add_library)
             PUBLIC
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
         )
-
+        
         install(
             TARGETS ${_TARGET}
             EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
@@ -372,6 +413,7 @@ function(package_add_library)
             DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
             COMPONENT ${PACKAGE_CMAKE_COMPONENT}
         )
+
     endif()
     
 endfunction(package_add_library)
@@ -799,3 +841,38 @@ function(package_target_install_headers)
 
 
 endfunction(package_target_install_headers)
+
+
+
+
+function(package_add_component PACKAGE COMPONENT_NAME)
+    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
+    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
+endfunction(package_add_component PACKAGE COMPONENT_NAME)
+
+
+function(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
+    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
+endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+
+
+macro(packager_finalize_config)
+    include(CPack)
+endmacro(packager_finalize_config)
+
+
+
+
+
+
+
+################################################################################
+################################################################################
+# ONCE CPACK.CMAKE GETS REFACTORED INTO A MODULE, 
+# STUFF BELOW HERE GETS MOVED TO THERE
+################################################################################
+################################################################################
+
+# RESOURCES:
+# https://fossies.org/linux/cmake/Tests/CPackComponentsForAll/CMakeLists.txt

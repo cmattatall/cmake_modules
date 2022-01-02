@@ -1,20 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(foobar
-    VERSION 0.1.2
-)
-
-
+project(foobar VERSION 0.1.2)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(package_api)
-
-
 
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
-package_add(foo ${PROJECT_VERSION})
+package_add(foo 2.0.1)
 package_add_library(
     TARGET foo_target_objects
     PACKAGE foo
@@ -30,15 +24,14 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:foo_target_objects>
 )
-
 package_target_install_headers(
     TARGET foo_target
     PACKAGE foo
     FILES include/foo.hpp
 )
 
-#[[
-package_add(bar ${PROJECT_VERSION})
+
+package_add(bar 9.9.9)
 package_add_library(
     TARGET bar_target_objects
     PACKAGE bar
@@ -53,7 +46,11 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:bar_target_objects>
 )
-#]]
+package_target_install_headers(
+    TARGET bar_target
+    PACKAGE bar
+    FILES include/bar.hpp
+)
 
 #[[
 package_add(my_create_lib_pkg ${PROJECT_VERSION})
@@ -65,4 +62,4 @@ package_create_libraries(
 )
 #]]
 
-include(packaging/cpack)
+packager_finalize_config()
