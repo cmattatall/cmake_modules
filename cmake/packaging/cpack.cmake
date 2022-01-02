@@ -44,17 +44,46 @@ set(CPACK_OUTPUT_FILE_PREFIX "${PROJECT_BINARY_DIR}/packages")
 
 # CONFIGURE VARIOUS CPACK GENERATORS
 include(cpack/cpack_tgz)
-#include(cpack/cpack_deb)
-#include(cpack/cpack_zip)
-#include(cpack/cpack_rpm)
 
-foreach(GENERATOR ${CPACK_GENERATOR})
+
+function(package_update_generators)
+    foreach(GENERATOR ${CPACK_GENERATOR})
     # Sadly, we have to manually specify CPACK_<GENERATOR>_COMPONENT_INSTALL manually.
     # If we do not, then the value of CPACK_COMPONENT_INSTALL will be ignored when
     # generating a specific package. This is a bug in my opinion but at least it 
     # is well documented.
     set(CPACK_${GENERATOR}_COMPONENT_INSTALL ${CPACK_COMPONENT_INSTALL})
-endforeach(GENERATOR ${CPACK_GENERATOR})
+    endforeach(GENERATOR ${CPACK_GENERATOR})
+endfunction(package_update_generators)
+
+
+function(package_create_deb)
+    include(cpack/cpack_deb)
+    package_update_generators()
+endfunction(package_create_deb)
+
+
+function(package_create_rpm)
+    include(cpack/cpack_rpm)
+    package_update_generators()
+endfunction(package_create_rpm)
+
+
+function(package_create_zip)
+    include(cpack/cpack_zip)
+    package_update_generators()
+endfunction(package_create_zip)
+
+
+function(package_create_all)
+    package_create_deb()
+    package_create_zip()
+    package_create_rpm()
+endfunction(package_create_all)
+
+
+
+
 
 
 #include(packaging/cpack_postinst)
