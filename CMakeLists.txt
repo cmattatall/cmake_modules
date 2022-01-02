@@ -11,6 +11,10 @@ include(package_api)
 
 package_add(my_package ${PROJECT_VERSION})
 
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp REQUIRED)
+
 set(sources 
     src/foo.cpp
     src/src1.cpp
@@ -23,6 +27,9 @@ package_add_library(
     TARGET_TYPE OBJECT
 )
 target_sources(my_target_objects PRIVATE ${sources})
+
+target_include_directories(my_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
+target_link_libraries(my_target_objects PUBLIC ${JSONCPP_LIBRARIES})
 
 
 package_add_library(
