@@ -37,7 +37,7 @@ endfunction(package_check_exists PACKAGE)
 
 function(package_get_staging_dir PACKAGE OUT_package_staging_dir)
     package_check_exists(${PACKAGE})
-    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}/")
+    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}")
     get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
     if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
         file(MAKE_DIRECTORY ${PARENT_PACKAGE_STAGING_DIR})
