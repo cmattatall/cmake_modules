@@ -16,9 +16,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
 set(sources 
-    src/foo.cpp
     src/src1.cpp
-    src/src2.cpp
 )
 
 package_add_library(
