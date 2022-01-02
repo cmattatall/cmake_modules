@@ -49,4 +49,6 @@ package_create_libraries(
 )
 #]]
 
-include(cpack/cpack)
+include(packaging/cpack)
+
+package_create_deb()
