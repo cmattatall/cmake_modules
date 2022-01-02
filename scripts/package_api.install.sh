@@ -29,7 +29,7 @@ function install () {
     local PKG_OUTPUT_DIR="${BUILD_DIR}/packages"
     for DEBIAN_PKG in $(find ${PKG_OUTPUT_DIR} -name "*\.deb"); do
         local PKG_DIR=$(dirname ${DEBIAN_PKG})
-        local EXTRACT_DIR="${PKG_DIR}/$(basename ${DEBIAN_PKG} | awk 'BEGIN { FS = "." } ; { print $1 }' | awk 'BEGIN {FS = "-"}; {print $1}')"
+        local EXTRACT_DIR="${PKG_DIR}/$(basename ${DEBIAN_PKG} | awk 'BEGIN { FS = "." } ; { print $1 }' | awk 'BEGIN {FS = "_"}; {print $1}')"
         [ -d "${EXTRACT_DIR}" ] && rm -r "${EXTRACT_DIR}" && sync
         mkdir -p "${EXTRACT_DIR}"
         dpkg -x "${DEBIAN_PKG}" "${EXTRACT_DIR}"
