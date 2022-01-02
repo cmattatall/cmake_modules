@@ -50,5 +50,3 @@ package_create_libraries(
 #]]
 
 include(packaging/cpack)
-
-package_create_deb()

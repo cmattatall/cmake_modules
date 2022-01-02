@@ -43,54 +43,26 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
 set(CPACK_OUTPUT_FILE_PREFIX "${PROJECT_BINARY_DIR}/packages")
 
 
-function(package_update_generators)
-    foreach(GENERATOR ${CPACK_GENERATOR})
+set(CPACK_GENERATOR "") # Empty list, user will specific with functions which generators they want
+#include(packaging/cpack_zip)
+#include(packaging/cpack_tgz)
+include(packaging/cpack_deb)
+#include(packaging/cpack_rpm)
+
+
+message("CPACK_GENERATOR=${CPACK_GENERATOR}")
+
+foreach(GENERATOR ${CPACK_GENERATOR})
     # Sadly, we have to manually specify CPACK_<GENERATOR>_COMPONENT_INSTALL manually.
     # If we do not, then the value of CPACK_COMPONENT_INSTALL will be ignored when
     # generating a specific package. This is a bug in my opinion but at least it 
     # is well documented.
     set(CPACK_${GENERATOR}_COMPONENT_INSTALL ${CPACK_COMPONENT_INSTALL})
-    endforeach(GENERATOR ${CPACK_GENERATOR})
-endfunction(package_update_generators)
-
-
-function(package_create_tgz)
-    include(packaging/cpack_tgz)
-    package_update_generators()
-endfunction(package_create_tgz)
-
-
-function(package_create_deb)
-    include(packaging/cpack_deb)
-    package_update_generators()
-    message(WARNING "${CMAKE_CURRENT_FUNCTION}, CPACK_GENERATOR:${CPACK_GENERATOR}")
-endfunction(package_create_deb)
-
-
-function(package_create_rpm)
-    include(packaging/cpack_rpm)
-    package_update_generators()
-endfunction(package_create_rpm)
-
-
-function(package_create_zip)
-    include(packaging/cpack_zip)
-    package_update_generators()
-endfunction(package_create_zip)
-
-
-function(package_create_all)
-    package_create_tgz()
-    package_create_zip()
-    package_create_deb()
-    package_create_rpm()
-endfunction(package_create_all)
-
+endforeach(GENERATOR ${CPACK_GENERATOR})
 
 
 #include(packaging/cpack_postinst)
 include(InstallRequiredSystemLibraries)
+
+
 include(CPack)
-
-
-message("CPACK_GENERATOR:${CPACK_GENERATOR}")
