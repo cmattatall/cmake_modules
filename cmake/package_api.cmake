@@ -339,6 +339,136 @@ function(package_add_library)
 endfunction(package_add_library)
 
 
+
+
+function(package_target_install_headers)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+
+    set(OPTION_ARGS
+        # Add optional (boolean) arguments here
+        RECURSIVE_SEARCH
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        PACKAGE
+        TARGET
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        FILES
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+    
+
+    message(WARNING "_FILES = ${_FILES}")
+
+
+
+endfunction(package_target_install_headers)
+
+
+
+
+
+
+
+
+
+
+
+
 # Usage:
 #
 # package_create_libraries(
