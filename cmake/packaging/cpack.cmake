@@ -50,17 +50,6 @@ include(packaging/cpack_deb)
 #include(packaging/cpack_rpm)
 
 
-message("CPACK_GENERATOR=${CPACK_GENERATOR}")
-
-foreach(GENERATOR ${CPACK_GENERATOR})
-    # Sadly, we have to manually specify CPACK_<GENERATOR>_COMPONENT_INSTALL manually.
-    # If we do not, then the value of CPACK_COMPONENT_INSTALL will be ignored when
-    # generating a specific package. This is a bug in my opinion but at least it 
-    # is well documented.
-    set(CPACK_${GENERATOR}_COMPONENT_INSTALL ${CPACK_COMPONENT_INSTALL})
-endforeach(GENERATOR ${CPACK_GENERATOR})
-
-
 #include(packaging/cpack_postinst)
 include(InstallRequiredSystemLibraries)
 
