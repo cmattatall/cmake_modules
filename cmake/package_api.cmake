@@ -1,3 +1,17 @@
+################################################################################
+# Package Api:
+#
+# Description:
+# A cmake module that is meant to provide a modular interface for generating
+# relocatable, installable packages from source modules using cmake. 
+#
+# Author:
+# Carl Mattatall (cmattatall2@gmail.com)
+#
+################################################################################
+# RESOURCES:
+# https://fossies.org/linux/cmake/Tests/CPackComponentsForAll/CMakeLists.txt   
+################################################################################
 cmake_minimum_required(VERSION 3.21)
 
 include(CMakePackageConfigHelpers)
@@ -728,19 +742,3 @@ endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY
 macro(packager_finalize_config)
     include(CPack)
 endmacro(packager_finalize_config)
-
-
-
-
-
-
-
-################################################################################
-################################################################################
-# ONCE CPACK.CMAKE GETS REFACTORED INTO A MODULE, 
-# STUFF BELOW HERE GETS MOVED TO THERE
-################################################################################
-################################################################################
-
-# RESOURCES:
-# https://fossies.org/linux/cmake/Tests/CPackComponentsForAll/CMakeLists.txt
