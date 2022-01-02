@@ -198,6 +198,7 @@ function(package_add PACKAGE VERSION)
         COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
+    package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
     package_get_config_file_path(${PACKAGE} PACKAGE_CONFIG_FILE)
     set(CONFIG_INPUT_FILE_CONTENT "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\ncheck_required_components(\"@PROJECT_NAME@\")\n")
     file(WRITE ${PACKAGE_CONFIG_FILE}.in "${CONFIG_INPUT_FILE_CONTENT}")
