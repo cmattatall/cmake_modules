@@ -31,6 +31,11 @@ package_add_library(
     $<TARGET_OBJECTS:foo_target_objects>
 )
 
+package_target_install_headers(
+    TARGET foo_target
+    PACKAGE foo
+    FILES include/foo.hpp
+)
 
 #[[
 package_add(bar ${PROJECT_VERSION})

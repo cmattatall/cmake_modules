@@ -83,6 +83,36 @@ function(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_ins
 endfunction(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
 
 
+function(package_get_library_files_install_destination PACKAGE OUT_library_files_install_destination)
+    package_check_exists(${PACKAGE})
+    set(${OUT_library_files_install_destination} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
+endfunction(package_get_library_files_install_destination PACKAGE OUT_library_files_install_destination)
+
+
+function(package_get_header_files_install_destination PACKAGE OUT_header_files_install_destination)
+    package_check_exists(${PACKAGE})
+    set(${OUT_header_files_install_destination} ${CMAKE_INSTALL_INCLUDEDIR}/${PACKAGE} PARENT_SCOPE)
+endfunction(package_get_header_files_install_destination PACKAGE OUT_header_files_install_destination)
+
+
+function(package_get_header_component_name PACKAGE OUT_header_component_name)
+    package_check_exists(${PACKAGE})
+    set(${OUT_header_component_name} "dev" PARENT_SCOPE)
+endfunction(package_get_header_component_name PACKAGE OUT_header_component_name)
+
+
+function(package_get_library_component_name PACKAGE OUT_library_component_name)
+    package_check_exists(${PACKAGE})
+    set(${OUT_library_component_name} "lib" PARENT_SCOPE)
+endfunction(package_get_library_component_name PACKAGE OUT_library_component_name)
+
+
+function(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
+    package_check_exists(${PACKAGE})
+    set(${OUT_cmake_component_name} "cmake" PARENT_SCOPE)
+endfunction(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
+
+
 
 function(package_add PACKAGE VERSION)
     message(VERBOSE "${CMAKE_CURRENT_FUNCTION} args: ${ARGN}")
@@ -101,6 +131,7 @@ function(package_add PACKAGE VERSION)
         COMPATIBILITY AnyNewerVersion
     )
 
+    package_get_cmake_component_name(${PACKAGE} PACKAGE_CMAKE_COMPONENT)
     package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_VERSION_FILE}
@@ -109,7 +140,7 @@ function(package_add PACKAGE VERSION)
             GROUP_READ
             WORLD_READ
         DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-        COMPONENT cmake
+        COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
     package_get_config_file_path(${PACKAGE} PACKAGE_CONFIG_FILE)
@@ -129,7 +160,7 @@ function(package_add PACKAGE VERSION)
             GROUP_READ
             WORLD_READ        
         DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-        COMPONENT cmake
+        COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
     #[[
@@ -305,6 +336,16 @@ function(package_add_library)
         endif(_TARGET_TYPE STREQUAL SHARED)
     endif(DEFINED _VERSION)
 
+    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    package_get_library_component_name(${_PACKAGE} PACKAGE_LIB_COMPONENT)
+
+    package_get_library_files_install_destination(${_PACKAGE} PACKAGE_LIB_INSTALL_DIR)
+    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_INSTALL_DIR)
+    
+    package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+    package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
+
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
         message(STATUS "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
@@ -314,25 +355,22 @@ function(package_add_library)
         # the header directories will have to be searched for in the 
         # system install tree and not the current build tree
         target_include_directories(${_TARGET} 
-        PUBLIC 
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${_PACKAGE}>
+            PUBLIC
+                $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
         )
 
         install(
             TARGETS ${_TARGET}
             EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/${_PACKAGE}
-            COMPONENT lib
+            DESTINATION ${PACKAGE_LIB_INSTALL_DIR}
+            COMPONENT ${PACKAGE_LIB_COMPONENT}
         )
 
-        package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-        package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
-        package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
         install(
             EXPORT ${PACKAGE_EXPORT_NAME}
             NAMESPACE ${PACKAGE_NAMESPACE}::
             DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-            COMPONENT cmake
+            COMPONENT ${PACKAGE_CMAKE_COMPONENT}
         )
     endif()
     
@@ -631,3 +669,133 @@ function(package_create_libraries)
     endif(DEFINED _PRIVATE_INCLUDE_DIRECTORIES)
 
 endfunction(package_create_libraries)
+
+
+
+function(package_target_install_headers)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+    
+    set(OPTION_ARGS
+        # Add optional (boolean) arguments here
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        PACKAGE
+        TARGET
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+    
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        FILES
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+
+    if(NOT TARGET ${_TARGET})
+        message(FATAL_ERROR "Target: \"${_TARGET}\" does not exist.")
+    endif(NOT TARGET ${_TARGET})
+
+    package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
+    package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
+
+    foreach(file ${_FILES})
+        install(
+            FILES ${file}
+            DESTINATION ${PACKAGE_HEADER_FILE_INSTALL_DIR}
+            COMPONENT ${PACKAGE_HEADER_COMPONENT}
+        )
+    endforeach(file ${_FILES})
+
+
+endfunction(package_target_install_headers)
