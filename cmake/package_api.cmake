@@ -36,8 +36,7 @@ function(package_get_exists PACKAGE OUT_package_exists)
             endif(${PACKAGE} IN_LIST PACKAGE_LIST)
         endif(PACKAGE_COUNT GREATER 0)
     else()
-        # Create the empty file
-        file(TOUCH ${PACKAGE_LISTFILE})
+        message(FATAL_ERROR "PACKAGE_LISTFILE:\"${PACKAGE_LISTFILE}\" does not exist")
     endif(EXISTS ${PACKAGE_LISTFILE})
 endfunction(package_get_exists PACKAGE OUT_package_exists)
 
@@ -288,9 +287,14 @@ function(package_add)
         message(FATAL_ERROR "Unknown arguments: \"${_UNPARSED_ARGUMENTS}\" given to ${CMAKE_CURRENT_FUNCTION}")
     endif(NUM_UNPARSED_ARGS GREATER 0)
 
+    package_get_packages_listfile(PACKAGE_LISTFILE)
+    if(NOT EXISTS ${PACKAGE_LISTFILE})
+        file(TOUCH ${PACKAGE_LISTFILE}) # Create the empty file
+    endif(NOT EXISTS ${PACKAGE_LISTFILE})
+
     package_get_exists(${_PACKAGE} PACKAGE_EXISTS)
     if(PACKAGE_EXISTS)
-        return()
+        message(WARNING "PACKAGE: \"${_PACKAGE}\" already exists.")
     else()
         package_get_packages_listfile(PACKAGE_LISTFILE)
         file(APPEND ${PACKAGE_LISTFILE} "${_PACKAGE}\n")
@@ -329,7 +333,7 @@ function(package_add)
     
     file(WRITE ${PACKAGE_CONFIG_FILE}.in "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\n")
     file(APPEND ${PACKAGE_CONFIG_FILE}.in "include(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\n")
-    file(APPEND ${PACKAGE_CONFIG_FILE}.in "check_required_components(\"@PROJECT_NAME@\")\n")
+    file(APPEND ${PACKAGE_CONFIG_FILE}.in "check_required_components(\"@_PACKAGE@\")\n")
 
     configure_package_config_file(
         ${PACKAGE_CONFIG_FILE}.in
