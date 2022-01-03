@@ -410,7 +410,7 @@ function(package_add_library)
 
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
-        message(STATUS "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
+        message(VERBOSE "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
     else()
 
         # After the target is installed, if another project or target imports it
