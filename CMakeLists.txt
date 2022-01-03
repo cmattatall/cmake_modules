@@ -25,7 +25,6 @@ package_add_library(
     $<TARGET_OBJECTS:foo_target_objects>
 )
 package_target_install_headers(
-    TARGET foo_target
     PACKAGE foo
     FILES include/foo.hpp
 )
@@ -47,7 +46,6 @@ package_add_library(
     $<TARGET_OBJECTS:bar_target_objects>
 )
 package_target_install_headers(
-    TARGET bar_target
     PACKAGE bar
     FILES include/bar.hpp
 )
