@@ -14,13 +14,15 @@ fi
 function install () {
 
     local BUILD_DIR="$(realpath ${WORKDIR})/build"
-    if [ -d "${BUILD_DIR}" ]; then 
-        rm -r "${BUILD_DIR}"
-        sync
-    fi
+
+    set +e
+    rm -r "${BUILD_DIR}"
+    sync
+    set -e
     mkdir "${BUILD_DIR}"
     sync
-    cmake -S . -B "${BUILD_DIR}" --log-level=debug 
+
+    cmake -S . -B "${BUILD_DIR}" --log-level=DEBUG 
     cmake --build "${BUILD_DIR}"
     cd "${BUILD_DIR}"
     cpack
