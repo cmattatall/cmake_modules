@@ -183,6 +183,29 @@ function(package_get_component_list PACKAGE OUT_components_list)
 endfunction(package_get_component_list PACKAGE OUT_components_list)
 
 
+function(package_add_component PACKAGE COMPONENT_NAME)
+    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
+    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
+endfunction(package_add_component PACKAGE COMPONENT_NAME)
+
+
+function(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
+    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
+endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+
+
+################################################################################
+# THIS MUST BE CALLED LAST IN THE TOP-LEVEL CMAKELISTS.TXT                     #
+################################################################################
+# AS IT FINALIZES THE SETTIGNS FOR ALL THE VARIABLES                           #
+# CONFIGURED USING THIS MODULE'S API FUNCTIONS AND GENERATES THE CPACK CONFIG. #
+################################################################################
+macro(packager_finalize_config)
+    include(CPack)
+endmacro(packager_finalize_config)
+
+
 # Usage:
 # package_add( 
 #   PACKAGE my_package    
@@ -317,10 +340,7 @@ function(package_add)
         package_add_to_list(${_PACKAGE})
     endif(PACKAGE_EXISTS)
 
-    set(VALID_VERSION_REGEX "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
-    message(VERBOSE "Validating VERSION: ${_VERSION} against ${VALID_VERSION_REGEX}")
-    string(REGEX MATCH ${VALID_VERSION_REGEX} VALID_VERSION ${_VERSION})
-
+    util_is_version_valid(${_VERSION} VALID_VERSION)
     if(NOT VALID_VERSION)
         message(VERBOSE "[in ${CMAKE_CURRENT_FUNCTION}] Argument VERSION does not match regex ${VALID_VERSION_REGEX}.")
         message(FATAL_ERROR "[in ${CMAKE_CURRENT_FUNCTION}] : VERSION argument given invalid value ${_VERSION}.")
@@ -331,7 +351,7 @@ function(package_add)
     package_get_version_file_path(${_PACKAGE} PACKAGE_VERSION_FILE)
     write_basic_package_version_file(
         ${PACKAGE_VERSION_FILE} 
-        VERSION ${VALID_VERSION} 
+        VERSION ${_VERSION} 
         COMPATIBILITY AnyNewerVersion
     )
 
@@ -1006,24 +1026,150 @@ function(package_add_dependencies)
 endfunction(package_add_dependencies)
 
 
+# Usage:
+# package_target_link_libraries(
+#   PACKAGE <my_package>
+#   TARGET <my_target>
+#   MODE [ PUBLIC | PRIVATE | INTERFACE ]
+#   LIBRARIES { lib1 lib2 ... } # This is what you would call with target_link_libraries
+# )
+function(package_target_link_libraries)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
 
-function(package_add_component PACKAGE COMPONENT_NAME)
-    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
-    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
-endfunction(package_add_component PACKAGE COMPONENT_NAME)
+    set(OPTION_ARGS
+        # Add optional (boolean) arguments here
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        TARGET
+        PACKAGE
+        MODE
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        LIBRARIES
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+    set(MODE-CHOICES 
+        PUBLIC
+        PRIVATE
+        INTERFACE
+    )
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _KEYWORDS_MISSING_VALUES=${_KEYWORDS_MISSING_VALUES}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _UNPARSED_ARGUMENTS=${_UNPARSED_ARGUMENTS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
 
 
-function(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
-    string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
-    set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
-endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
 
+    package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
+    package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
+    set(IMPORTED_TARGET_NAME ${PACKAGE_NAMESPACE}::${_TARGET})
+    foreach(LIB ${_LIBRARIES})
+        file(APPEND ${PACKAGE_CONFIG_FILE} "\nif(TARGET ${IMPORTED_TARGET_NAME})\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE} "\ttarget_link_libraries(${IMPORTED_TARGET_NAME} ${_MODE} ${LIB})\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE} "endif(TARGET ${IMPORTED_TARGET_NAME})\n")
+    endforeach(LIB ${_LIBRARIES})
+    
+endfunction(package_target_link_libraries)
 
+################################################################################
+# Utility functions - TODO: factor into a different module
+################################################################################
 
-
-
-
-
-macro(packager_finalize_config)
-    include(CPack)
-endmacro(packager_finalize_config)
+function(util_is_version_valid VERSION OUT_version_is_valid)
+    set(VALID_VERSION_REGEX "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    message(VERBOSE "Validating VERSION: ${VERSION} against ${VALID_VERSION_REGEX}")
+    string(REGEX MATCH ${VALID_VERSION_REGEX} VALID_VERSION ${VERSION})
+    if(VALID_VERSION)
+        set(${OUT_version_is_valid} 1 PARENT_SCOPE)
+    endif(VALID_VERSION)
+endfunction(util_is_version_valid VERSION OUT_version_is_valid)
