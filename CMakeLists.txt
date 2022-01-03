@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(foobar VERSION 0.1.2)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(package_api)
+include(graphviz)
 
 
 find_package(PkgConfig REQUIRED)
@@ -20,7 +21,17 @@ package_add_library(
 )
 target_sources(foo_target_objects PRIVATE src/foo.cpp)
 target_include_directories(foo_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
-target_link_libraries(foo_target_objects PUBLIC ${JSONCPP_LIBRARIES})
+package_add_dependency(
+    PACKAGE foo
+    DEPENDENCY jsoncpp
+)
+
+package_target_link_libraries(
+    PACKAGE foo
+    TARGET foo_target_objects
+    MODE PUBLIC
+    LIBRARIES ${JSONCPP_LIBRARIES}
+)
 
 package_add_library(
     TARGET foo_target 
@@ -28,12 +39,14 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:foo_target_objects>
 )
+
 package_install_headers(
     PACKAGE foo
     FILES include/foo.hpp
 )
 
 
+#[[
 package_add(
     PACKAGE bar 
     VERSION 9.9.9
@@ -57,6 +70,7 @@ package_install_headers(
     FILES include/bar.hpp
 )
 
+#[[
 package_add(
     PACKAGE baz 
     VERSION ${PROJECT_VERSION}
@@ -68,4 +82,11 @@ package_create_libraries(
 )
 target_link_libraries(baz-objects PUBLIC ${JSONCPP_LIBRARIES})
 target_include_directories(baz-objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
+#]]
+
+
 packager_finalize_config()
+
+if(COMMAND graphviz_configure)
+    graphviz_configure()
+endif(COMMAND graphviz_configure)

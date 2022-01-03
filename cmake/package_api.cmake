@@ -904,11 +904,12 @@ endfunction(package_install_headers)
 
 
 # Usage:
-# package_add_dependencies(
+# package_add_dependency(
 #   PACKAGE <MY_PACKAGE>
-#   DEPENDENCIES { jsoncpp GTest ... } # These are what you would put in call to find_package()
+#   DEPENDENCY <jsoncpp> # This is what you would put in call to find_package()
+#   [ VERSION 2.0.1 ] 
 # )
-function(package_add_dependencies)
+function(package_add_dependency)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -924,9 +925,11 @@ function(package_add_dependencies)
     set(SINGLE_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
         PACKAGE
+        DEPENDENCY
     )
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
+        VERSION
     )
 
     ##########################
@@ -934,7 +937,6 @@ function(package_add_dependencies)
     ##########################
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
-        DEPENDENCIES
     )
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
@@ -1017,13 +1019,14 @@ function(package_add_dependencies)
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
-
     package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
-    foreach(DEP ${_DEPENDENCIES})
-        file(APPEND ${PACKAGE_CONFIG_FILE} "find_dependency(\"${DEP}\")\n")
-    endforeach(DEP ${_DEPENDENCIES})
+    file(APPEND ${PACKAGE_CONFIG_FILE} "find_dependency(\"${_DEPENDENCY}\"")
+    if(_VERSION)
+        file(APPEND ${PACKAGE_CONFIG_FILE} " ${_VERSION}")
+    endif(_VERSION)
+    file(APPEND ${PACKAGE_CONFIG_FILE} ")")
     
-endfunction(package_add_dependencies)
+endfunction(package_add_dependency)
 
 
 # Usage:
