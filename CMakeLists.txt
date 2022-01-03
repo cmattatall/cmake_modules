@@ -36,7 +36,7 @@ package_install_headers(
 
 package_add(
     PACKAGE bar 
-    VERSION 9.9.9XX
+    VERSION 9.9.9
 )
 package_add_library(
     TARGET bar_target_objects
