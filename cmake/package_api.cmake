@@ -165,29 +165,155 @@ endfunction(package_get_component_list PACKAGE OUT_components_list)
 
 
 # Usage:
-# package_add( my_package 0.9.1)
+# package_add( 
+#   PACKAGE my_package    
+#   [VERSION 0.9.1 ] 
+# )
 # 
 # Notes: 
 #   - Currently we don't validate if the version string is valid for semver
-function(package_add PACKAGE VERSION)
-    message(VERBOSE "${CMAKE_CURRENT_FUNCTION} args: ${ARGN}")
-    package_get_exists(${PACKAGE} PACKAGE_EXISTS)
+function(package_add)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+
+    set(OPTION_ARGS
+        # ADD YOUR OPTIONAL ARGUMENTS
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        PACKAGE
+        VERSION
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _KEYWORDS_MISSING_VALUES=${_KEYWORDS_MISSING_VALUES}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _UNPARSED_ARGUMENTS=${_UNPARSED_ARGUMENTS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+
+    list(LENGTH _UNPARSED_ARGUMENTS NUM_UNPARSED_ARGS)
+    if(NUM_UNPARSED_ARGS GREATER 0)
+        message(FATAL_ERROR "Unknown arguments: \"${_UNPARSED_ARGUMENTS}\" given to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_UNPARSED_ARGS GREATER 0)
+
+    package_get_exists(${_PACKAGE} PACKAGE_EXISTS)
     if(PACKAGE_EXISTS)
         return()
     else()
         package_get_packages_listfile(PACKAGE_LISTFILE)
-        file(APPEND ${PACKAGE_LISTFILE} "${PACKAGE}\n")
+        file(APPEND ${PACKAGE_LISTFILE} "${_PACKAGE}\n")
     endif(PACKAGE_EXISTS)
+
+    set(VALID_VERSION_REGEX "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    message(VERBOSE "Validating VERSION: ${_VERSION} against ${VALID_VERSION_REGEX}")
+    string(REGEX MATCH ${VALID_VERSION_REGEX} VALID_VERSION ${_VERSION})
+
+    if(NOT VALID_VERSION)
+        message(VERBOSE "[in ${CMAKE_CURRENT_FUNCTION}] Argument VERSION does not match regex ${VALID_VERSION_REGEX}.")
+        message(FATAL_ERROR "[in ${CMAKE_CURRENT_FUNCTION}] : VERSION argument given invalid value ${_VERSION}.")
+    endif(NOT VALID_VERSION)
     
-    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
+    package_get_version_file_path(${_PACKAGE} PACKAGE_VERSION_FILE)
     write_basic_package_version_file(
         ${PACKAGE_VERSION_FILE} 
-        VERSION ${VERSION} 
+        VERSION ${VALID_VERSION} 
         COMPATIBILITY AnyNewerVersion
     )
 
-    package_get_cmake_component_name(${PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_VERSION_FILE}
         PERMISSIONS
@@ -198,8 +324,8 @@ function(package_add PACKAGE VERSION)
         COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
-    package_get_targets_export_name(${PACKAGE} PACKAGE_EXPORT_NAME)
-    package_get_config_file_path(${PACKAGE} PACKAGE_CONFIG_FILE)
+    package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+    package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
     set(CONFIG_INPUT_FILE_CONTENT "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\ncheck_required_components(\"@PROJECT_NAME@\")\n")
     file(WRITE ${PACKAGE_CONFIG_FILE}.in "${CONFIG_INPUT_FILE_CONTENT}")
     configure_package_config_file(
@@ -208,7 +334,7 @@ function(package_add PACKAGE VERSION)
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
     file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
-    package_get_cmake_files_install_destination(${PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_CONFIG_FILE}
         PERMISSIONS
@@ -220,24 +346,24 @@ function(package_add PACKAGE VERSION)
     )
 
     # Get component names
-    package_get_header_component_name(${PACKAGE} PACKAGE_HEADER_COMPONENT)
-    package_get_library_component_name(${PACKAGE} PACKAGE_LIBRARY_COMPONENT)
-    package_get_cmake_component_name(${PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_executable_component_name(${PACKAGE} PACKAGE_EXECUTABLE_COMPONENT)
+    package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
+    package_get_library_component_name(${_PACKAGE} PACKAGE_LIBRARY_COMPONENT)
+    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    package_get_executable_component_name(${_PACKAGE} PACKAGE_EXECUTABLE_COMPONENT)
 
     # Add components to the package
-    package_add_component(${PACKAGE} ${PACKAGE_LIBRARY_COMPONENT})
-    package_add_component(${PACKAGE} ${PACKAGE_EXECUTABLE_COMPONENT})
+    package_add_component(${_PACKAGE} ${PACKAGE_LIBRARY_COMPONENT})
+    package_add_component(${_PACKAGE} ${PACKAGE_EXECUTABLE_COMPONENT})
 
-    package_add_component(${PACKAGE} ${PACKAGE_HEADER_COMPONENT})
+    package_add_component(${_PACKAGE} ${PACKAGE_HEADER_COMPONENT})
     package_add_component_dependency(${PACKAGE_HEADER_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
 
-    package_add_component(${PACKAGE} ${PACKAGE_CMAKE_COMPONENT})
+    package_add_component(${_PACKAGE} ${PACKAGE_CMAKE_COMPONENT})
     package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
     package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_EXECUTABLE_COMPONENT})
 
-    packager_configure_deb(${PACKAGE})
-endfunction(package_add PACKAGE VERSION)
+    packager_configure_deb(${_PACKAGE})
+endfunction(package_add)
 
 
 
@@ -306,10 +432,6 @@ function(package_add_library)
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
     set(TARGET_TYPE-DEFAULT SHARED)
-
-    if(DEFINED PROJECT_VERSION)
-        set(VERSION-DEFAULT ${PROJECT_VERSION})
-    endif(DEFINED PROJECT_VERSION)
 
     ############################################################################
     # Perform the argument parsing                                             #

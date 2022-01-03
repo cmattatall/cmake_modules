@@ -8,7 +8,11 @@ include(package_api)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
-package_add(foo 2.0.1)
+package_add(
+    PACKAGE foo
+    VERSION 2.0.1    
+)
+
 package_add_library(
     TARGET foo_target_objects
     PACKAGE foo
@@ -30,7 +34,10 @@ package_install_headers(
 )
 
 
-package_add(bar 9.9.9)
+package_add(
+    PACKAGE bar 
+    VERSION 9.9.9XX
+)
 package_add_library(
     TARGET bar_target_objects
     PACKAGE bar
