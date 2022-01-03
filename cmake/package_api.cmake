@@ -402,7 +402,6 @@ function(package_add)
     package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
     package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_EXECUTABLE_COMPONENT})
 
-    packager_configure_deb(${_PACKAGE})
 endfunction(package_add)
 
 

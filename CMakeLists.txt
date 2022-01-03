@@ -35,9 +35,9 @@ package_install_headers(
     PACKAGE foo
     FILES include/foo.hpp
 )
+packager_configure_deb(foo)
 
 
-#[[
 package_add(
     PACKAGE bar 
     VERSION 9.9.9
@@ -60,6 +60,8 @@ package_install_headers(
     PACKAGE bar
     FILES include/bar.hpp
 )
+packager_configure_deb(bar)
+
 
 #[[
 package_add(
@@ -73,8 +75,8 @@ package_create_libraries(
 )
 target_link_libraries(baz-objects PUBLIC ${JSONCPP_LIBRARIES})
 target_include_directories(baz-objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
+packager_configure_deb(baz)
 #]]
-
 
 packager_finalize_config()
 
