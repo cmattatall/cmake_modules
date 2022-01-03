@@ -326,8 +326,11 @@ function(package_add)
 
     package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
     package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
-    set(CONFIG_INPUT_FILE_CONTENT "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\ninclude(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\ncheck_required_components(\"@PROJECT_NAME@\")\n")
-    file(WRITE ${PACKAGE_CONFIG_FILE}.in "${CONFIG_INPUT_FILE_CONTENT}")
+    
+    file(WRITE ${PACKAGE_CONFIG_FILE}.in "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\n")
+    file(APPEND ${PACKAGE_CONFIG_FILE}.in "include(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\n")
+    file(APPEND ${PACKAGE_CONFIG_FILE}.in "check_required_components(\"@PROJECT_NAME@\")\n")
+
     configure_package_config_file(
         ${PACKAGE_CONFIG_FILE}.in
         ${PACKAGE_CONFIG_FILE}
