@@ -553,6 +553,45 @@ function(package_add_library)
         #    - EXCLUDE_FROM_ALL               
     )
 
+    # Inherit link libraries and include directories from target objects.
+    # This because we do not install target objects and so without doing this
+    # transient dependencies will not be propagated into the install package.
+    foreach(arg ${_UNPARSED_ARGUMENTS})
+
+        # The behaviour of string(REGEX <mode>) is INCREDIBLY undocumented.
+        # Sometimes it is even plain wrong.
+        # string(REGEX MATCH) stores captured subexpressions in CMAKE_MATCH_1 ... CMAKE_MATCH_9
+        # (where CMAKE_MATCH_0 == the complete matched expression - not subexpression).
+        #
+        # However, Despite the claims of the documentation, CMAKE_MATCH_x (where x > 1)
+        # is not set for string(REGEX REPLACE) ... which is sad because there is a large
+        # usecase subset where one would want to parse a subexpression from within a string.
+        set(TARGET_OBJECTS_REGEX "\\$<TARGET_OBJECTS:(.+)>")
+        string(REGEX MATCH ${TARGET_OBJECTS_REGEX} MATCHED ${arg})
+        if(MATCHED)
+            string(REGEX REPLACE ${TARGET_OBJECTS_REGEX} ${CMAKE_MATCH_1} OBJECT_TARGET_NAME ${arg})
+            message(DEBUG "Parsed target:${OBJECT_TARGET_NAME} from ${arg} as TARGET_OBJECT library dependency for target: ${_TARGET} in ${CMAKE_CURRENT_FUNCTION}")
+            if(TARGET ${OBJECT_TARGET_NAME})
+                get_target_property(OBJECT_TARGET_TYPE ${OBJECT_TARGET_NAME} TYPE)
+                if(OBJECT_TARGET_TYPE)
+                    if(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
+                        get_target_property(INHERITED_INTERFACE_INCLUDE_DIRECTORIES ${OBJECT_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+                        get_target_property(INHERITED_INTERFACE_LINK_LIBRARIES ${OBJECT_TARGET_NAME} INTERFACE_LINK_LIBRARIES)
+                        message(DEBUG "TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
+                        message(DEBUG "TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
+                        target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
+                        target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                    else()
+                        message(WARNING "Target:${OBJECT_TARGET_NAME} exists but does not have type:OBJECT_LIBRARY. There is a likely bug around in ${CMAKE_CURRENT_LIST_LINE} in ${CMAKE_CURRENT_LIST_FILE}.")
+                    endif(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
+                endif(OBJECT_TARGET_TYPE)
+            else()
+                message(WARNING "Target:${OBJECT_TARGET_NAME} does not exist. There is a likely bug around in ${CMAKE_CURRENT_LIST_LINE} in ${CMAKE_CURRENT_LIST_FILE}.")
+            endif(TARGET ${OBJECT_TARGET_NAME})
+            
+        endif(MATCHED)
+    endforeach(arg ${_UNPARSED_ARGUMENTS})
+
     set_target_properties(${_TARGET} 
         PROPERTIES 
             POSITION_INDEPENDENT_CODE ON
