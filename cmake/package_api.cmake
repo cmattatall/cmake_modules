@@ -208,9 +208,6 @@ endmacro(packager_finalize_config)
 #   PACKAGE my_package    
 #   [VERSION 0.9.1 ] 
 # )
-# 
-# Notes: 
-#   - Currently we don't validate if the version string is valid for semver
 function(package_add)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
