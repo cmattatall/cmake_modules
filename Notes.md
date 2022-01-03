@@ -9,5 +9,10 @@ if [ $(basename $(realpath $(pwd))) == "build" ]; then rm -r ./*; echo "in build
 
 # TODO
 
-[ ] We need to fix the transient dependencies using SHLIBDEPS and properly write them to the config file content.
+[ ] Fix bug with uninstall script not properly uninstalling as part of test teardown. This is likely because the name of the debian packges once installed with dpkg are ${PROJECT_NAME}-${PKG} and not just ${PKG}. The fix is likely in the cpack_deb.cmake file
+
+[ ] Add project readme
+
+[ ] Add project license file
+
     
