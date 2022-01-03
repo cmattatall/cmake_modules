@@ -24,7 +24,7 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:foo_target_objects>
 )
-package_target_install_headers(
+package_install_headers(
     PACKAGE foo
     FILES include/foo.hpp
 )
@@ -45,7 +45,7 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:bar_target_objects>
 )
-package_target_install_headers(
+package_install_headers(
     PACKAGE bar
     FILES include/bar.hpp
 )

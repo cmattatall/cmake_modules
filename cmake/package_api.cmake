@@ -600,11 +600,11 @@ endfunction(package_create_libraries)
 
 
 # Usage:
-# package_target_install_headers(
+# package_install_headers(
 #   PACKAGE <MY_PACKAGE>
 #   FILES { file1.hpp file1.h file3.hpp }
 # )
-function(package_target_install_headers)
+function(package_install_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -725,7 +725,7 @@ function(package_target_install_headers)
     endforeach(file ${_FILES})
 
 
-endfunction(package_target_install_headers)
+endfunction(package_install_headers)
 
 
 function(package_add_component PACKAGE COMPONENT_NAME)
