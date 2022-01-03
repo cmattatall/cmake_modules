@@ -1159,6 +1159,8 @@ function(package_target_link_libraries)
     foreach(LIB ${_LIBRARIES})
         file(APPEND ${PACKAGE_CONFIG_FILE} "\nif(TARGET ${IMPORTED_TARGET_NAME})\n")
         file(APPEND ${PACKAGE_CONFIG_FILE} "\ttarget_link_libraries(${IMPORTED_TARGET_NAME} ${_MODE} ${LIB})\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE} "else()\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE} "\tmessage(FATAL_ERROR \"Target: ${IMPORTED_TARGET_NAME} does not exist. This indicates a possible issue with the package_api cmake module.\")\n")
         file(APPEND ${PACKAGE_CONFIG_FILE} "endif(TARGET ${IMPORTED_TARGET_NAME})\n")
     endforeach(LIB ${_LIBRARIES})
     
