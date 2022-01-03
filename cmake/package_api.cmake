@@ -21,32 +21,51 @@ find_package(PkgConfig REQUIRED)
 
 
 function(package_get_packages_listfile OUT_packages_listfile)
-    set(${OUT_packages_listfile} ${CMAKE_BINARY_DIR}/package-list.txt PARENT_SCOPE) # top level of build tree
+    set(${OUT_packages_listfile} "${CMAKE_BINARY_DIR}/package-list.txt" PARENT_SCOPE) # top level of build tree
 endfunction(package_get_packages_listfile OUT_packages_listfile)
 
 
-function(package_get_exists PACKAGE OUT_package_exists)
+function(package_get_listed_packages OUT_package_list)
     package_get_packages_listfile(PACKAGE_LISTFILE)
-    set(${OUT_package_exists} 0 PARENT_SCOPE)
-    if(EXISTS ${PACKAGE_LISTFILE})
-        file(STRINGS ${PACKAGE_LISTFILE} PACKAGE_LIST)
-        list(LENGTH PACKAGE_LIST PACKAGE_COUNT)
-        if(PACKAGE_COUNT GREATER 0)
-            if(${PACKAGE} IN_LIST PACKAGE_LIST)
-                set(${OUT_package_exists} 1 PARENT_SCOPE)
-            endif(${PACKAGE} IN_LIST PACKAGE_LIST)
-        endif(PACKAGE_COUNT GREATER 0)
+    if(NOT EXISTS ${PACKAGE_LISTFILE})
+        message(DEBUG "IN ${CMAKE_CURRENT_FUNCTION}, PACKAGE_LISTFILE did not exist. Creating now...")
+        file(TOUCH ${PACKAGE_LISTFILE}) # Create the empty file
+        set(${OUT_package_list} "" PARENT_SCOPE)
     else()
-        message(FATAL_ERROR "PACKAGE_LISTFILE:\"${PACKAGE_LISTFILE}\" does not exist")
-    endif(EXISTS ${PACKAGE_LISTFILE})
+        file(STRINGS ${PACKAGE_LISTFILE} LISTED_PACKAGES)
+        message(DEBUG "read LISTED_PACKAGES:\"${LISTED_PACKAGES}\" from package list")
+        set(${OUT_package_list} ${LISTED_PACKAGES} PARENT_SCOPE)
+    endif(NOT EXISTS ${PACKAGE_LISTFILE})
+endfunction(package_get_listed_packages OUT_package_list)
+
+
+function(package_get_exists PACKAGE OUT_package_exists)
+    package_get_listed_packages(PACKAGE_LIST)
+    if(${PACKAGE} IN_LIST PACKAGE_LIST)
+        set(${OUT_package_exists} 1 PARENT_SCOPE)
+    else()
+        set(${OUT_package_exists} 0 PARENT_SCOPE)
+    endif(${PACKAGE} IN_LIST PACKAGE_LIST)
 endfunction(package_get_exists PACKAGE OUT_package_exists)
+
+
+function(package_add_to_list PACKAGE)
+    package_get_packages_listfile(PACKAGE_LISTFILE)
+    package_get_listed_packages(PACKAGE_LIST)
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] PACKAGE_LIST=${PACKAGE_LIST}")
+    if(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
+        file(APPEND ${PACKAGE_LISTFILE} "${PACKAGE}\n")
+    else()
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] FOUND PACKAGE ${PACKAGE} IN PACKAGE_LIST:\"${PACKAGE_LIST}\". Package will not be appended to the package list.")
+    endif(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
+endfunction(package_add_to_list PACKAGE)
 
 
 function(package_check_exists PACKAGE)
     package_get_exists(${PACKAGE} PACKAGE_EXISTS)
-    if(NOT PACKAGE_EXISTS)
-        message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGN}. Reason: package: \"${PACKAGE}\" does not exist.")
-    endif(NOT PACKAGE_EXISTS)
+    if(NOT ${PACKAGE_EXISTS})
+        message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGV}. Reason: package: \"${PACKAGE}\" does not exist.")
+    endif(NOT ${PACKAGE_EXISTS})
 endfunction(package_check_exists PACKAGE)
 
 
@@ -288,17 +307,14 @@ function(package_add)
         message(FATAL_ERROR "Unknown arguments: \"${_UNPARSED_ARGUMENTS}\" given to ${CMAKE_CURRENT_FUNCTION}")
     endif(NUM_UNPARSED_ARGS GREATER 0)
 
-    package_get_packages_listfile(PACKAGE_LISTFILE)
-    if(NOT EXISTS ${PACKAGE_LISTFILE})
-        file(TOUCH ${PACKAGE_LISTFILE}) # Create the empty file
-    endif(NOT EXISTS ${PACKAGE_LISTFILE})
 
     package_get_exists(${_PACKAGE} PACKAGE_EXISTS)
+    message(DEBUG "After call to package_get_exists, PACKAGE_EXISTS=${PACKAGE_EXISTS}")
     if(PACKAGE_EXISTS)
         message(WARNING "PACKAGE: \"${_PACKAGE}\" already exists.")
     else()
-        package_get_packages_listfile(PACKAGE_LISTFILE)
-        file(APPEND ${PACKAGE_LISTFILE} "${_PACKAGE}\n")
+        message(DEBUG "Adding package: ${_PACKAGE} to package list.")
+        package_add_to_list(${_PACKAGE})
     endif(PACKAGE_EXISTS)
 
     set(VALID_VERSION_REGEX "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
@@ -308,6 +324,8 @@ function(package_add)
     if(NOT VALID_VERSION)
         message(VERBOSE "[in ${CMAKE_CURRENT_FUNCTION}] Argument VERSION does not match regex ${VALID_VERSION_REGEX}.")
         message(FATAL_ERROR "[in ${CMAKE_CURRENT_FUNCTION}] : VERSION argument given invalid value ${_VERSION}.")
+    else()
+        message(VERBOSE "Package \"${_PACKAGE}\" version \"${_VERSION}\" is valid.")
     endif(NOT VALID_VERSION)
     
     package_get_version_file_path(${_PACKAGE} PACKAGE_VERSION_FILE)
@@ -865,6 +883,130 @@ function(package_install_headers)
 endfunction(package_install_headers)
 
 
+# Usage:
+# package_add_dependencies(
+#   PACKAGE <MY_PACKAGE>
+#   DEPENDENCIES { jsoncpp GTest ... } # These are what you would put in call to find_package()
+# )
+function(package_add_dependencies)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+
+    set(OPTION_ARGS
+        # Add optional (boolean) arguments here
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        PACKAGE
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        DEPENDENCIES
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _KEYWORDS_MISSING_VALUES=${_KEYWORDS_MISSING_VALUES}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _UNPARSED_ARGUMENTS=${_UNPARSED_ARGUMENTS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+
+    package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
+    foreach(DEP ${_DEPENDENCIES})
+        file(APPEND ${PACKAGE_CONFIG_FILE} "find_dependency(\"${DEP}\")\n")
+    endforeach(DEP ${_DEPENDENCIES})
+    
+endfunction(package_add_dependencies)
+
+
+
 function(package_add_component PACKAGE COMPONENT_NAME)
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
@@ -875,6 +1017,11 @@ function(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NA
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
 endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+
+
+
+
+
 
 
 macro(packager_finalize_config)
