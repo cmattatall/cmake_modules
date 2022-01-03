@@ -570,8 +570,8 @@ endfunction(package_add_library)
 #   PACKAGE my_package_name
 #   TARGET  my_target_name
 #   SOURCES { src1.cpp src2.cpp } 
-#   [PUBLIC_INCLUDE_DIRECTORIES] { dir1 dir2  }
-#   [PRIVATE_INCLUDE_DIRECTORIES] { dir1 dir2 }
+#   [PUBLIC_INCLUDE_DIRECTORIES] { dir1 dir2 ... }
+#   [PRIVATE_INCLUDE_DIRECTORIES] { dir1 dir2 ... }
 # )
 function(package_create_libraries)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
