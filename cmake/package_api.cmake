@@ -949,6 +949,9 @@ endfunction(package_install_headers)
 #   [ VERSION 2.0.1 ] 
 # )
 function(package_add_dependency)
+    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Transitive dependencies are automatically handled as part of CMAKE_EXPORT_SETS")
+    return()
+
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -1076,6 +1079,9 @@ endfunction(package_add_dependency)
 #   LIBRARIES { lib1 lib2 ... } # This is what you would call with target_link_libraries
 # )
 function(package_target_link_libraries)
+    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Transitive dependencies are automatically handled as part of CMAKE_EXPORT_SETS")
+    return()
+
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #

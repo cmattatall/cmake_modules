@@ -21,17 +21,8 @@ package_add_library(
 )
 target_sources(foo_target_objects PRIVATE src/foo.cpp)
 target_include_directories(foo_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
-package_add_dependency(
-    PACKAGE foo
-    DEPENDENCY jsoncpp
-)
+target_link_libraries(foo_target_objects PUBLIC ${JSONCPP_LIBRARIES})
 
-package_target_link_libraries(
-    PACKAGE foo
-    TARGET foo_target_objects
-    MODE PUBLIC
-    LIBRARIES ${JSONCPP_LIBRARIES}
-)
 
 package_add_library(
     TARGET foo_target 
