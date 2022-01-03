@@ -57,14 +57,15 @@ package_install_headers(
     FILES include/bar.hpp
 )
 
-#[[
-package_add(my_create_lib_pkg ${PROJECT_VERSION})
-
-package_create_libraries(
-    TARGET foobar_target
-    PACKAGE my_create_lib_pkg
-    SOURCES ${sources}
+package_add(
+    PACKAGE baz 
+    VERSION ${PROJECT_VERSION}
 )
-#]]
-
+package_create_libraries(
+    TARGET baz
+    PACKAGE baz
+    SOURCES src/baz.cpp
+)
+target_link_libraries(baz-objects PUBLIC ${JSONCPP_LIBRARIES})
+target_include_directories(baz-objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
 packager_finalize_config()
