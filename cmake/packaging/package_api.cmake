@@ -13,7 +13,8 @@ cmake_minimum_required(VERSION 3.21)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
-include(${CMAKE_CURRENT_LIST_DIR}/cpack/cpack_config)
+
+include(${CMAKE_CURRENT_LIST_DIR}/cpack/cpack_config.cmake)
 find_package(PkgConfig REQUIRED)
 
 
