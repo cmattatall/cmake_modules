@@ -37,11 +37,10 @@ else()
     message(VERBOSE "Cannot set CPACK_RESOURCE_FILE_README. File: ${PROJECT_SOURCE_DIR}/README.md does not exist.")
 endif(EXISTS "${PROJECT_SOURCE_DIR}/README.md")
 
-include(packaging/cpack_deb)
-include(packaging/cpack_tgz)
-include(packaging/cpack_zip)
-include(packaging/cpack_rpm)
-
-#include(packaging/cpack_postinst)
+include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_deb)
+include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_tgz)
+include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_zip)
+include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_rpm)
+include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_postinst)
 
 include(InstallRequiredSystemLibraries)

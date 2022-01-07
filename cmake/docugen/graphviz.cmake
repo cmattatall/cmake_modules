@@ -1,3 +1,8 @@
+
+# Just use modern cmake here. 
+# We will warn if graphviz not supported
+cmake_minimum_required(VERSION 3.10) 
+
 function(graphviz_configure)
     if(${CMAKE_VERSION} VERSION_GREATER "3.21.0")
         set(DOT_EXECUTABLE dot)

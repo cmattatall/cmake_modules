@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 ################################################################################
 # 
-# CMake module file to import gtest + gmock and produce a 
-# linkable target called "testing_framework" and a test discovery function called
-# "testing_framework_discover_tests".
+# CMake module file to import gtest + gmock and produce an INTERFACE target
+# called "gtest_framework"
 #
 ################################################################################
 #   EXAMPLE USAGE:
@@ -30,7 +29,7 @@ cmake_minimum_required(VERSION 3.21)
 #   target_sources(unit_tests PRIVATE unit_test_sourcefile1.cpp)
 #   
 #   include(fetch-gtest)
-#   testing_framework_discover_tests(unit_tests)
+#   gtest_discover_tests(unit_tests)
 #   
 ################################################################################
 #   
@@ -48,53 +47,48 @@ cmake_minimum_required(VERSION 3.21)
 #   - GTest::Main   
 #   - GTest::GTest <--- this contains the gmock stuff
 #
-# Thus, this module file provides an interface target called testing_framework
-# and a function testing_framework_discover_tests that is meant to be linked
-# against using target_link_libraries as an alias target. 
-#
 ################################################################################
 
-add_library(testing_framework INTERFACE)
+function(testing_gtest_setup)
 
-message(STATUS "Checking for package \"GTest\" ... ")
-find_package(GTest)
-include(GoogleTest)
-if(NOT GTest_FOUND)
-    message(STATUS "Package \"GTest\" not found on disk. Downloading and building from source now ... ")
-    find_package(Git REQUIRED)
-    include(FetchContent)
-    set(FETCHCONTENT_QUIET OFF)
+    add_library(gtest_framework INTERFACE)
 
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        2f80c2ba71c0e8922a03b9b855e5b019ad1f7064 # release-1.10.0
-    )
-    FetchContent_MakeAvailable(googletest)
+    message(STATUS "Checking for package \"GTest\" ... ")
+    find_package(GTest)
+    include(GoogleTest)
+    if(NOT GTest_FOUND)
+        message(STATUS "Package \"GTest\" not found on disk. Downloading and building from source now ... ")
+        find_package(Git REQUIRED)
+        include(FetchContent)
+        set(FETCHCONTENT_QUIET OFF)
 
-
-    target_link_libraries(testing_framework 
-        INTERFACE 
-            gtest_main 
-            gtest
-            gmock
-    )
-
-    # Disable linting and static analysis on third-party library sources.
-    set_target_properties(testing_framework PROPERTIES CXX_CLANG_TIDY "")
-
-else()
-    message(STATUS "Ok.")
-    message(STATUS "") # stdout formatting
-
-    target_link_libraries(testing_framework 
-        INTERFACE 
-            GTest::Main 
-            GTest::GTest
-    )
-endif(NOT GTest_FOUND)
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG        2f80c2ba71c0e8922a03b9b855e5b019ad1f7064 # release-1.10.0
+        )
+        FetchContent_MakeAvailable(googletest)
 
 
-function(testing_framework_discover_tests test_runner_target)
-    gtest_discover_tests(${test_runner_target})
-endfunction(testing_framework_discover_tests test_runner_target)
+        target_link_libraries(gtest_framework 
+            INTERFACE 
+                gtest_main 
+                gtest
+                gmock
+        )
+
+        # Disable linting and static analysis on third-party library sources.
+        set_target_properties(gtest_framework PROPERTIES CXX_CLANG_TIDY "")
+
+    else()
+        message(STATUS "Ok.")
+        message(STATUS "") # stdout formatting
+
+        target_link_libraries(gtest_framework 
+            INTERFACE 
+                GTest::Main 
+                GTest::GTest
+        )
+    endif(NOT GTest_FOUND)
+endfunction(testing_gtest_setup)
+
