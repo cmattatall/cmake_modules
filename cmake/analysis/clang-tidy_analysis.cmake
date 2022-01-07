@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
+message(FATAL_ERROR "${CMAKE_CURRENT_LIST_FILE} is not ready for use")
 
 find_program(CLANG_TIDY_BIN NAMES clang-tidy)
 if(CLANG_TIDY_BIN STREQUAL CLANG_TIDY_BIN-NOTFOUND)
