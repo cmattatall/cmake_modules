@@ -1,24 +1,24 @@
 cmake_minimum_required(VERSION 3.21)
 
-function(target_compile_definitions_COMMON target mode)
+function(util_target_compile_definitions_COMMON target mode)
     target_compile_options(${target} ${mode} -Wall)
     target_compile_options(${target} ${mode} -Wextra)
     target_compile_options(${target} ${mode} -Wshadow)
-endfunction(target_compile_definitions_COMMON target mode)
+endfunction(util_target_compile_definitions_COMMON target mode)
 
 
-function(target_compile_definitions_CXX_CORE target mode)
+function(util_target_compile_definitions_CXX_CORE target mode)
     target_compile_definitions_COMMON(${target} ${mode})
     target_compile_options(${target} ${mode} -Wnon-virtual-dtor)
-endfunction(target_compile_definitions_CXX_CORE target mode)
+endfunction(util_target_compile_definitions_CXX_CORE target mode)
 
 
-function(target_compile_definitions_C_CORE target mode)
+function(util_target_compile_definitions_C_CORE target mode)
     target_compile_definitions_COMMON(${target} ${mode})
-endfunction(target_compile_definitions_C_CORE target mode)
+endfunction(util_target_compile_definitions_C_CORE target mode)
 
 
-function(target_compile_definitions_COVERAGE target mode)
+function(util_target_compile_definitions_COVERAGE target mode)
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
         if(CONFIGURE_TEST_COVERAGE)
             target_compile_options(${target} ${mode} -fprofile-arcs)
@@ -30,10 +30,10 @@ function(target_compile_definitions_COVERAGE target mode)
     else()
         message(WARNING "Not configuring target ${target} with compile definitions for code coverage. CMAKE_BUILD_TYPE is not \"Debug\"")
     endif(CMAKE_BUILD_TYPE STREQUAL Debug)
-endfunction(target_compile_definitions_COVERAGE target)
+endfunction(util_target_compile_definitions_COVERAGE target)
 
 
-function(target_compile_definitions_OPTIMIZE target mode)
+function(util_target_compile_definitions_OPTIMIZE target mode)
     target_compile_options(${target} ${mode} -ffunction-sections)
     target_compile_options(${target} ${mode} -fdata-sections)
 
@@ -47,4 +47,4 @@ function(target_compile_definitions_OPTIMIZE target mode)
     #target_compile_options(${target} ${mode} -flto)
     #target_compile_options(${target} ${mode} -ffat-lto-objects)
     #target_compile_options(${target} ${mode} -fuse-linker-plugin)
-endfunction(target_compile_definitions_OPTIMIZE target mode)
+endfunction(util_target_compile_definitions_OPTIMIZE target mode)
