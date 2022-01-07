@@ -23,6 +23,12 @@ target_sources(foo_target_objects PRIVATE src/foo.cpp)
 target_include_directories(foo_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(foo_target_objects PUBLIC ${JSONCPP_LIBRARIES})
 
+package_install_headers(
+    PACKAGE foo
+    TARGET foo_target_objects
+    FILES include/foo.hpp
+)
+
 
 package_add_library(
     TARGET foo_target 
@@ -31,10 +37,6 @@ package_add_library(
     $<TARGET_OBJECTS:foo_target_objects>
 )
 
-package_install_headers(
-    PACKAGE foo
-    FILES include/foo.hpp
-)
 packager_configure_deb(foo)
 
 
@@ -56,8 +58,9 @@ package_add_library(
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:bar_target_objects>
 )
-package_install_headers(
+package_target_install_headers(
     PACKAGE bar
+    TARGET bar_target_objects
     FILES include/bar.hpp
 )
 packager_configure_deb(bar)

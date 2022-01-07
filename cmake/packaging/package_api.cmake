@@ -810,7 +810,7 @@ endfunction(package_create_libraries)
 #   PACKAGE <MY_PACKAGE>
 #   FILES { file1.hpp file1.h file3.hpp }
 # )
-function(package_install_headers)
+function(package_target_install_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -826,6 +826,7 @@ function(package_install_headers)
     set(SINGLE_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
         PACKAGE
+        TARGET
     )
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
@@ -921,10 +922,23 @@ function(package_install_headers)
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
 
+    if(NOT TARGET ${_TARGET})
+        message(FATAL_ERROR "Target:${_TARGET} does not exist.")
+    endif(NOT TARGET ${_TARGET})
+    
+
     package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
     package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
 
     foreach(file ${_FILES})
+
+        get_filename_component(HEADER_DIR ${file} DIRECTORY)
+        target_include_directories(${_TARGET} 
+            PUBLIC 
+                $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_DIR}>
+                $<BUILD_INTERFACE:${HEADER_DIR}>
+        )
+
         install(
             FILES ${file}
             DESTINATION ${PACKAGE_HEADER_FILE_INSTALL_DIR}
@@ -933,7 +947,7 @@ function(package_install_headers)
     endforeach(file ${_FILES})
 
 
-endfunction(package_install_headers)
+endfunction(package_target_install_headers)
 
 
 ################################################################################
