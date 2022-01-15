@@ -814,9 +814,10 @@ endfunction(package_create_libraries)
 
 
 # Usage:
-# package_install_headers(
-#   PACKAGE <MY_PACKAGE>
-#   FILES { file1.hpp file1.h file3.hpp }
+# package_target_install_headers(
+#   PACKAGE my_package
+#   TARGET my_target
+#   HEADERS { header1.hpp header2.h header3.hpp }
 # )
 function(package_target_install_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
