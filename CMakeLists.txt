@@ -65,22 +65,6 @@ package_target_install_headers(
 )
 packager_configure_deb(bar)
 
-
-#[[
-package_add(
-    PACKAGE baz 
-    VERSION ${PROJECT_VERSION}
-)
-package_create_libraries(
-    TARGET baz
-    PACKAGE baz
-    SOURCES src/baz.cpp
-)
-target_link_libraries(baz-objects PUBLIC ${JSONCPP_LIBRARIES})
-target_include_directories(baz-objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
-packager_configure_deb(baz)
-#]]
-
 packager_finalize_config()
 
 if(COMMAND graphviz_configure)
