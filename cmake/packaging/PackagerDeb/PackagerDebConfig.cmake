@@ -43,6 +43,7 @@ else()
     message(FATAL_ERROR "TODO: Add CPACK_DEBIAN_FILE_NAME configuration for cross-compiled projects")
 endif(NOT CMAKE_CROSSCOMPILING)
 
+
 function(packager_configure_deb PKG)
     string(TOUPPER ${PKG} PKG_UPPER)
     package_get_version(${PKG} PKG_VER)
