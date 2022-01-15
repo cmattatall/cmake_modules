@@ -90,6 +90,12 @@ function(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_conf
 endfunction(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
 
 
+function(package_get_configfile_staging_dir PACKAGE OUT_package_configfile_staging_dir)
+    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    set(${OUT_package_configfile_staging_dir} "${PACKAGE_STAGING_PREFIX}/configFiles" PARENT_SCOPE)
+endfunction(package_get_configfile_staging_dir PACKAGE OUT_package_configfile_staging_dir)
+
+
 function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
     package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
     set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
@@ -170,13 +176,16 @@ function(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
         message(FATAL_ERROR "Invocation of ${CMAKE_CURRENT_FUNCTION} is meaningless on the current platform. ldconfig is not used.")
     endif()
     set(LDCONFIG_INSTALL_DIR "/etc/ld.so.conf.d/${PACKAGE}/")
-    if(NOT EXISTS ${LDCONFIG_INSTALL_DIR})
-        message(WARNING "Directory ${LDCONFIG_INSTALL_DIR} does not exist. A ldconfig installation for package : ${PACKAGE} may fail.")
-    elseif(NOT IS_DIRECTORY ${LDCONFIG_INSTALL_DIR})
-        message(WARNING "${LDCONFIG_INSTALL_DIR} exist, but is not a directory. A ldconfig installation for package : ${PACKAGE} may fail.")
-    endif()
     set(${OUT_ldconfig_install_dir} ${LDCONFIG_INSTALL_DIR} PARENT_SCOPE)
 endfunction(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
+
+
+function(package_get_postinst_component_name PACKAGE OUT_postinst_component_name)
+    package_check_exists(${PACKAGE})
+    package_get_library_component_name(${PACKAGE} PKG_LIBRARY_COMPONENT_NAME)
+    set(${OUT_postinst_component_name} ${PKG_LIBRARY_COMPONENT_NAME} PARENT_SCOPE)
+endfunction(package_get_postinst_component_name PACKAGE OUT_postinst_component_name)
+
 
 
 function(package_get_version PACKAGE OUT_package_version)
