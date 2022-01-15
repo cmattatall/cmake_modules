@@ -87,7 +87,19 @@ endfunction(packager_configure_deb PKG)
 
 
 
+######################################
+# Configure Post-install steps
+######################################
+# Write the post-install script
+set(PROJECT_CONFIG_FILE_STAGING_DIR "${PROJECT_BINARY_DIR}/configFiles") 
 
+if(NOT EXISTS ${PROJECT_BINARY_DIR}/configFiles)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/configFiles)
+endif(NOT EXISTS ${PROJECT_BINARY_DIR}/configFiles)
 
-
+file(
+    WRITE ${PROJECT_BINARY_DIR}/configFiles/postinst
+    "#!/bin/bash\necho \"performing postinst steps for ${PROJECT_NAME}\"\nldconfig\n"
+)
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA ${PROJECT_BINARY_DIR}/configFiles/postinst)
 
