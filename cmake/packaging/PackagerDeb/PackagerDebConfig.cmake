@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.21)
 # Debian packages common configs
 #################################
 
+find_package(PackagerConfig REQUIRED)
+
 list(APPEND CPACK_GENERATOR "DEB")
 
 if(DEFINED CPACK_COMPONENT_INSTALL)

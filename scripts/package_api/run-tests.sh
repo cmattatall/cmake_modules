@@ -43,8 +43,10 @@ function run_tests () {
 
 function main () {
     setup 
-    run_tests
-    teardown
+    
+    #run_tests
+    
+    #teardown
 }
 
 main
