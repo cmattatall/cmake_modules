@@ -50,9 +50,11 @@ function(packager_configure_deb PKG)
     set(CPACK_DEBIAN_${PKG_UPPER}_PACKAGE_SHLIBDEPS ON CACHE INTERNAL "")
 
     package_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
-    package_get_library_files_install_reldir(${PKG} PKG_INSTALL_LIBDIR)
+    package_get_library_files_install_reldir(${PKG} PKG_INSTALL_LIBDIR_RELATIVE)
     package_get_postinst_component_name(${PKG} PKG_POSTINST_COMPONENT_NAME)
     package_get_ldconfig_install_absdir(${PKG} PKG_LDCONFIG_INSTALL_DIR)
+
+    set(PKG_INSTALL_LIBDIR_ABSOLUTE "${CPACK_PACKAGING_INSTALL_PREFIX}/${PKG_INSTALL_LIBDIR_RELATIVE}")
 
     if(NOT EXISTS ${PKG_LDCONFIG_INSTALL_DIR})
         message(DEBUG "Directory ${PKG_LDCONFIG_INSTALL_DIR} does not exist. Ldconfig installation for package : \"${PACKAGE}\" may fail.")
@@ -66,7 +68,7 @@ function(packager_configure_deb PKG)
 
     file(
         WRITE "${PKG_LDCONFIG_FILE}"
-        "# ${PKG} default configuration\n${PKG_INSTALL_LIBDIR}\n"
+        "# ${PKG} default configuration\n${PKG_INSTALL_LIBDIR_ABSOLUTE}\n"
     )
 
     message("PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
