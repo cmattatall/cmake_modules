@@ -846,7 +846,7 @@ function(package_target_install_headers)
     ##########################
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
-        FILES
+        HEADERS
     )
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
@@ -939,9 +939,9 @@ function(package_target_install_headers)
     package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
     package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
 
-    foreach(file ${_FILES})
+    foreach(HEADER_FILE ${_HEADERS})
 
-        get_filename_component(HEADER_DIR ${file} DIRECTORY)
+        get_filename_component(HEADER_DIR ${HEADER_FILE} DIRECTORY)
         target_include_directories(${_TARGET} 
             PUBLIC 
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_DIR}>
@@ -949,11 +949,11 @@ function(package_target_install_headers)
         )
 
         install(
-            FILES ${file}
+            FILES ${HEADER_FILE}
             DESTINATION ${PACKAGE_HEADER_FILE_INSTALL_DIR}
             COMPONENT ${PACKAGE_HEADER_COMPONENT}
         )
-    endforeach(file ${_FILES})
+    endforeach(HEADER_FILE ${_HEADERS})
 
 
 endfunction(package_target_install_headers)
