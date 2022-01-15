@@ -128,22 +128,22 @@ function(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
 endfunction(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
 
 
-function(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
+function(package_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
     package_check_exists(${PACKAGE})
-    set(${OUT_cmake_files_install_destination} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
-endfunction(package_get_cmake_files_install_destination PACKAGE OUT_cmake_files_install_destination)
+    set(${OUT_cmake_files_install_reldir} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
+endfunction(package_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
 
 
-function(package_get_library_files_install_destination PACKAGE OUT_library_files_install_destination)
+function(package_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
     package_check_exists(${PACKAGE})
-    set(${OUT_library_files_install_destination} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
-endfunction(package_get_library_files_install_destination PACKAGE OUT_library_files_install_destination)
+    set(${OUT_library_files_install_reldir} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
+endfunction(package_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
 
 
-function(package_get_header_files_install_destination PACKAGE OUT_header_files_install_destination)
+function(package_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
     package_check_exists(${PACKAGE})
-    set(${OUT_header_files_install_destination} ${CMAKE_INSTALL_INCLUDEDIR}/${PACKAGE} PARENT_SCOPE)
-endfunction(package_get_header_files_install_destination PACKAGE OUT_header_files_install_destination)
+    set(${OUT_header_files_install_reldir} ${CMAKE_INSTALL_INCLUDEDIR}/${PACKAGE} PARENT_SCOPE)
+endfunction(package_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
 
 
 function(package_get_header_component_name PACKAGE OUT_header_component_name)
@@ -177,14 +177,14 @@ function(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
 endfunction(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
 
 
-function(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
+function(package_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
     package_check_exists(${PACKAGE})
     if(APPLE OR (NOT UNIX)) # mac OS doesn't use ldconfig
         message(FATAL_ERROR "Invocation of ${CMAKE_CURRENT_FUNCTION} is meaningless on the current platform. ldconfig is not used.")
     endif()
     set(LDCONFIG_INSTALL_DIR "/etc/ld.so.conf.d/${PACKAGE}/")
-    set(${OUT_ldconfig_install_dir} ${LDCONFIG_INSTALL_DIR} PARENT_SCOPE)
-endfunction(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
+    set(${OUT_ldconfig_install_absdir} ${LDCONFIG_INSTALL_DIR} PARENT_SCOPE)
+endfunction(package_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
 
 
 function(package_get_postinst_component_name PACKAGE OUT_postinst_component_name)
@@ -394,7 +394,7 @@ function(package_add)
     )
 
     package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_VERSION_FILE}
         PERMISSIONS
@@ -418,7 +418,7 @@ function(package_add)
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
     file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
-    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_CONFIG_FILE}
         PERMISSIONS
@@ -645,9 +645,9 @@ function(package_add_library)
     package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
     package_get_library_component_name(${_PACKAGE} PACKAGE_LIB_COMPONENT)
 
-    package_get_library_files_install_destination(${_PACKAGE} PACKAGE_LIB_INSTALL_DIR)
-    package_get_cmake_files_install_destination(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-    package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_INSTALL_DIR)
+    package_get_library_files_install_reldir(${_PACKAGE} PACKAGE_LIB_INSTALL_DIR)
+    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    package_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_INSTALL_DIR)
     
     package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
     package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
@@ -971,7 +971,7 @@ function(package_target_install_headers)
     endif(NOT TARGET ${_TARGET})
     
 
-    package_get_header_files_install_destination(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
+    package_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
     package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
 
     foreach(HEADER_FILE ${_HEADERS})
