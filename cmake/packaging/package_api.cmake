@@ -84,6 +84,12 @@ function(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_sta
 endfunction(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_staging_dir)
 
 
+function(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
+    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    set(${OUT_package_runtime_config_staging_dir} "${PACKAGE_STAGING_PREFIX}/runtime" PARENT_SCOPE)
+endfunction(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
+
+
 function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
     package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
     set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
@@ -153,8 +159,8 @@ endfunction(package_get_executable_component_name PACKAGE OUT_executable_compone
 
 function(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
     package_check_exists(${PACKAGE})
-    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_DIR)
-    set(${OUT_package_ldconfig_filepath} "${PACKAGE_STAGING_DIR}/${PACKAGE}.conf" PARENT_SCOPE)
+    package_get_runtime_config_staging_dir(${PACKAGE} PACKAGE_RUNTIME_STAGING_DIR)
+    set(${OUT_package_ldconfig_filepath} "${PACKAGE_RUNTIME_STAGING_DIR}/${PACKAGE}.conf" PARENT_SCOPE)
 endfunction(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
 
 
