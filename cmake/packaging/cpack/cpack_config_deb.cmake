@@ -49,9 +49,49 @@ function(packager_configure_deb PKG)
     set(CPACK_DEBIAN_${PKG_UPPER}_FILE_NAME "${PKG_NAME}_${PKG_VER}_${PKG_ARCH}.deb" CACHE INTERNAL "")
     set(CPACK_DEBIAN_${PKG_UPPER}_PACKAGE_SHLIBDEPS ON CACHE INTERNAL "")
 
-
     package_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
-    message(WARNING "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
+    package_get_library_files_install_destination(${PKG} PKG_INSTALL_LIBDIR)
+    package_get_postinst_component_name(${PKG} PKG_POSTINST_COMPONENT_NAME)
+    package_get_ldconfig_install_dir(${PKG} PKG_LDCONFIG_INSTALL_DIR)
+
+    if(NOT EXISTS ${PKG_LDCONFIG_INSTALL_DIR})
+        message(DEBUG "Directory ${PKG_LDCONFIG_INSTALL_DIR} does not exist. Ldconfig installation for package : \"${PACKAGE}\" may fail.")
+    elseif(NOT IS_DIRECTORY ${PKG_LDCONFIG_INSTALL_DIR})
+        message(DEBUG "${PKG_LDCONFIG_INSTALL_DIR} exist, but is not a directory. Ldconfig installation for package : \"${PACKAGE}\" may fail.")
+    endif()
+
+
+    message(DEBUG "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE} (${CMAKE_CURRENT_FUNCTION}:${CMAKE_CURRENT_LIST_LINE})")
+    message(DEBUG "PKG_LDCONFIG_INSTALL_DIR:${PKG_LDCONFIG_INSTALL_DIR} (${CMAKE_CURRENT_FUNCTION}:${CMAKE_CURRENT_LIST_LINE})")
+
+    file(
+        WRITE "${PKG_LDCONFIG_FILE}"
+        "# ${PKG} default configuration\n${PKG_INSTALL_LIBDIR}\n"
+    )
+
+    message("PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
+
+    install(
+        FILES "${PKG_LDCONFIG_FILE}"
+        DESTINATION "${PKG_LDCONFIG_INSTALL_DIR}"
+        PERMISSIONS
+            OWNER_WRITE OWNER_READ
+            GROUP_READ
+            WORLD_READ
+        COMPONENT ${PKG_POSTINST_COMPONENT_NAME}
+    )
+
+    package_get_configfile_staging_dir(${PKG} PKG_CONFIGFILE_DIR)
+    if(NOT EXISTS "${PKG_CONFIGFILE_DIR}")
+        file(MAKE_DIRECTORY "${PKG_CONFIGFILE_DIR}")
+    endif(NOT EXISTS "${PKG_CONFIGFILE_DIR}")
+    
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PKG_CONFIGFILE_DIR}/postinst")
+    file(
+        WRITE ${CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA}
+        "#!/bin/bash\necho \"performing postinst steps for package: ${PKG}\"\nldconfig\n"
+    )
+
 endfunction(packager_configure_deb PKG)
 
 
