@@ -48,6 +48,10 @@ function(packager_configure_deb PKG)
     set(PKG_NAME "${PKG}")
     set(CPACK_DEBIAN_${PKG_UPPER}_FILE_NAME "${PKG_NAME}_${PKG_VER}_${PKG_ARCH}.deb" CACHE INTERNAL "")
     set(CPACK_DEBIAN_${PKG_UPPER}_PACKAGE_SHLIBDEPS ON CACHE INTERNAL "")
+
+
+    package_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
+    message(WARNING "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
 endfunction(packager_configure_deb PKG)
 
 

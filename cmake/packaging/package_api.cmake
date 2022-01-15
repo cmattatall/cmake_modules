@@ -151,6 +151,14 @@ function(package_get_executable_component_name PACKAGE OUT_executable_component_
 endfunction(package_get_executable_component_name PACKAGE OUT_executable_component_name)
 
 
+function(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
+    package_check_exists(${PACKAGE})
+    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_DIR)
+    set(${OUT_package_ldconfig_filepath} "${PACKAGE_STAGING_DIR}/${PACKAGE}.conf" PARENT_SCOPE)
+endfunction(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
+
+
+
 function(package_get_version PACKAGE OUT_package_version)
     package_check_exists(${PACKAGE})
     package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
