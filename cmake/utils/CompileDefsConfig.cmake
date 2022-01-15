@@ -8,13 +8,13 @@ endfunction(util_target_compile_definitions_COMMON target mode)
 
 
 function(util_target_compile_definitions_CXX_CORE target mode)
-    target_compile_definitions_COMMON(${target} ${mode})
+    util_target_compile_definitions_COMMON(${target} ${mode})
     target_compile_options(${target} ${mode} -Wnon-virtual-dtor)
 endfunction(util_target_compile_definitions_CXX_CORE target mode)
 
 
 function(util_target_compile_definitions_C_CORE target mode)
-    target_compile_definitions_COMMON(${target} ${mode})
+    util_target_compile_definitions_COMMON(${target} ${mode})
 endfunction(util_target_compile_definitions_C_CORE target mode)
 
 
