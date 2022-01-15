@@ -164,6 +164,20 @@ function(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
 endfunction(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
 
 
+function(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
+    package_check_exists(${PACKAGE})
+    if(APPLE OR (NOT UNIX)) # mac OS doesn't use ldconfig
+        message(FATAL_ERROR "Invocation of ${CMAKE_CURRENT_FUNCTION} is meaningless on the current platform. ldconfig is not used.")
+    endif()
+    set(LDCONFIG_INSTALL_DIR "/etc/ld.so.conf.d/${PACKAGE}/")
+    if(NOT EXISTS ${LDCONFIG_INSTALL_DIR})
+        message(WARNING "Directory ${LDCONFIG_INSTALL_DIR} does not exist. A ldconfig installation for package : ${PACKAGE} may fail.")
+    elseif(NOT IS_DIRECTORY ${LDCONFIG_INSTALL_DIR})
+        message(WARNING "${LDCONFIG_INSTALL_DIR} exist, but is not a directory. A ldconfig installation for package : ${PACKAGE} may fail.")
+    endif()
+    set(${OUT_ldconfig_install_dir} ${LDCONFIG_INSTALL_DIR} PARENT_SCOPE)
+endfunction(package_get_ldconfig_install_dir PACKAGE OUT_ldconfig_install_dir)
+
 
 function(package_get_version PACKAGE OUT_package_version)
     package_check_exists(${PACKAGE})
