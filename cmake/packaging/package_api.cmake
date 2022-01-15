@@ -97,12 +97,6 @@ function(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_conf
 endfunction(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
 
 
-function(package_get_configfile_staging_dir PACKAGE OUT_package_configfile_staging_dir)
-    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
-    set(${OUT_package_configfile_staging_dir} "${PACKAGE_STAGING_PREFIX}/configFiles" PARENT_SCOPE)
-endfunction(package_get_configfile_staging_dir PACKAGE OUT_package_configfile_staging_dir)
-
-
 function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
     package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
     set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)

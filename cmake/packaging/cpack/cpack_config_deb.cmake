@@ -83,17 +83,6 @@ function(packager_configure_deb PKG)
         COMPONENT ${PKG_POSTINST_COMPONENT_NAME}
     )
 
-    package_get_configfile_staging_dir(${PKG} PKG_CONFIGFILE_DIR)
-    if(NOT EXISTS "${PKG_CONFIGFILE_DIR}")
-        file(MAKE_DIRECTORY "${PKG_CONFIGFILE_DIR}")
-    endif(NOT EXISTS "${PKG_CONFIGFILE_DIR}")
-    
-    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PKG_CONFIGFILE_DIR}/postinst")
-    file(
-        WRITE ${CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA}
-        "#!/bin/bash\necho \"performing postinst steps for package: ${PKG}\"\nldconfig\n"
-    )
-
 endfunction(packager_configure_deb PKG)
 
 
