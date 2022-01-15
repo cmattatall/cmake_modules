@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(foobar VERSION 0.1.2)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(package_api)
-include(graphviz)
+include(packaging/package_api)
+include(docugen/graphviz)
 
 
 find_package(PkgConfig REQUIRED)
