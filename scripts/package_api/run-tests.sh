@@ -11,12 +11,12 @@ if [ ! -f "$(pwd)/.gitignore" ]; then
 fi
 
 function setup() {
-    $SHELL "${WORKDIR}/scripts/package_api.install.sh"    
+    $SHELL "${WORKDIR}/scripts/package_api/install.sh"    
 }
 
 
 function teardown () {
-    $SHELL "${WORKDIR}/scripts/package_api.uninstall.sh"    
+    $SHELL "${WORKDIR}/scripts/package_api/uninstall.sh"    
 }
 
 function run_package_api_tests () {
@@ -38,7 +38,6 @@ function run_package_api_tests () {
 
 function run_tests () {
     run_package_api_tests
-    
 }
 
 
