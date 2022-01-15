@@ -25,15 +25,16 @@ endfunction(package_get_packages_listfile OUT_packages_listfile)
 
 function(package_get_listed_packages OUT_package_list)
     package_get_packages_listfile(PACKAGE_LISTFILE)
+    set(LISTED_PACKAGES "") # empty list
     if(NOT EXISTS ${PACKAGE_LISTFILE})
-        message(DEBUG "IN ${CMAKE_CURRENT_FUNCTION}, PACKAGE_LISTFILE did not exist. Creating now...")
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - PACKAGE_LISTFILE:\"${PACKAGE_LISTFILE}\" did not exist. Creating now...")
         file(TOUCH ${PACKAGE_LISTFILE}) # Create the empty file
-        set(${OUT_package_list} "" PARENT_SCOPE)
     else()
         file(STRINGS ${PACKAGE_LISTFILE} LISTED_PACKAGES)
-        message(DEBUG "read LISTED_PACKAGES:\"${LISTED_PACKAGES}\" from package list")
-        set(${OUT_package_list} ${LISTED_PACKAGES} PARENT_SCOPE)
     endif(NOT EXISTS ${PACKAGE_LISTFILE})
+
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - LISTED_PACKAGES=\"${LISTED_PACKAGES}\"")
+    set(${OUT_package_list} ${LISTED_PACKAGES} PARENT_SCOPE)
 endfunction(package_get_listed_packages OUT_package_list)
 
 
