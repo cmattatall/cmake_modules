@@ -44,7 +44,7 @@ function run_tests () {
 function main () {
     setup 
     
-    #run_tests
+    run_tests
     
     #teardown
 }

@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(foobar VERSION 0.1.2)
-include(packaging/package_api)
-include(docugen/graphviz)
+
+find_package(GraphvizDocugen REQUIRED)
+find_package(PackageApi REQUIRED)
+find_package(PackagerDeb REQUIRED)
 
 
 find_package(PkgConfig REQUIRED)
