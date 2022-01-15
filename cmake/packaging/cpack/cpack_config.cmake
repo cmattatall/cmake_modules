@@ -41,6 +41,5 @@ include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_deb.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_tgz.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_zip.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_rpm.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/cpack_config_postinst.cmake)
 
 include(InstallRequiredSystemLibraries)
