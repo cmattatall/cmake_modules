@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 # Make this file test itself if 
 # added as a subdirectory from a higher-level project
 # With a call to enable_testing()
-if(NOT (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR))
+
+if(NOT (CMAKE_CURRENT_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR))
     file(RELATIVE_PATH CMAKELISTS_PATH_RELATIVE ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     file(TO_CMAKE_PATH ${CMAKELISTS_PATH_RELATIVE} CMAKELISTS_PATH_RELATIVE_AS_CMAKE_PATH)
     string(REPLACE "/" "_" TEST_NAME "${CMAKELISTS_PATH_RELATIVE_AS_CMAKE_PATH}")
@@ -13,10 +14,14 @@ if(NOT (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR))
         NAME ${TEST_NAME}
         COMMAND ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR} -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
     )
-endif(NOT (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR))
+    return()
+endif(NOT (CMAKE_CURRENT_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR))
 
-project(foobar VERSION 0.1.2)
-
+project(
+    foobar 
+    VERSION 0.1.2
+    LANGUAGES C CXX
+)
 find_package(GraphvizDocugen REQUIRED)
 find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
@@ -60,7 +65,9 @@ PackagerApi_add_library(
     $<TARGET_OBJECTS:foo_target_objects>
 )
 
-packager_configure_deb(foo)
+
+
+
 
 PackagerApi_add_package(
     PACKAGE bar 
@@ -94,11 +101,12 @@ PackagerApi_target_install_headers(
     TARGET bar_target_objects
     FILES include/bar.hpp
 )
-packager_configure_deb(bar)
 
-packager_finalize_config()
+
+#packager_configure_deb(foo)
+#packager_configure_deb(bar)
+#packager_finalize_config()
 
 if(COMMAND graphviz_configure)
     graphviz_configure()
 endif(COMMAND graphviz_configure)
-
