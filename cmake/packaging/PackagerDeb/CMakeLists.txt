@@ -8,7 +8,7 @@ enable_testing()
 
 file(GLOB 
     MODULE_CONFIG_FILES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*Config\.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*-config\.cmake"
 )
 
 install(
