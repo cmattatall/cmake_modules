@@ -4,7 +4,7 @@ project(PackagerZip
     VERSION 0.0.1
     LANGUAGES NONE
 )
-enable_testing()
+
 
 file(GLOB 
     MODULE_CONFIG_FILES 

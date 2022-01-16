@@ -26,5 +26,3 @@ install(
     COMPONENT ${MODULE_NAME}
     DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${MODULE_NAME}/"
 )
-
-enable_testing()
