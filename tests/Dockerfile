@@ -50,11 +50,17 @@ RUN echo "cmake --version = $(cmake --version)"
 #RUN apt-get update
 #RUN apt-get install -y cmake
 
+
+
 WORKDIR /home/root/
+
+# We don't care about the timezone, but pkgconfig does, so just add a dummy one
+ENV TZ=America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apt-get install -y \
+    pkg-config
 
 COPY . .
 RUN [ -d build ] && rm -r build
-RUN ./scripts/run-tests.sh
+RUN ./scripts/build-and-test.sh
 
-
-#RUN ./scripts/run-tests.sh

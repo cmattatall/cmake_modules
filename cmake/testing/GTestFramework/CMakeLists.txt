@@ -8,7 +8,7 @@ project(GTestFramework
 
 file(GLOB 
     MODULE_CONFIG_FILES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*-config\.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*Config\.cmake"
 )
 
 install(

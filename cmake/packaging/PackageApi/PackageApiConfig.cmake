@@ -16,7 +16,7 @@ include(GNUInstallDirs)
 
 find_package(PkgConfig REQUIRED)
 
-find_package(PackagerConfig REQUIRED)
+find_package(Packager REQUIRED)
 
 
 function(package_get_packages_listfile OUT_packages_listfile)
