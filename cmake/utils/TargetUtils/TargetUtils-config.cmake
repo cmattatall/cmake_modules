@@ -1,59 +1,59 @@
 cmake_minimum_required(VERSION 3.21)
 
 
-function(util_get_child_targets output_var dir)
+function(TargetUtils_get_child_targets output_var dir)
     set(targets)
-    util_get_all_targets_recursive(targets ${dir})
+    TargetUtils_get_all_targets_recursive(targets ${dir})
     set(${output_var} ${targets} PARENT_SCOPE)
-endfunction(util_get_child_targets output_var dir)
+endfunction(TargetUtils_get_child_targets output_var dir)
 
 
-function(util_get_all_targets output_var)
+function(TargetUtils_get_all_targets output_var)
     set(targets)
-    util_get_child_targets(targets ${CMAKE_SOURCE_DIR})
+    TargetUtils_get_child_targets(targets ${CMAKE_SOURCE_DIR})
     set(${output_var} ${targets} PARENT_SCOPE)
-endfunction(util_get_all_targets output_var)
+endfunction(TargetUtils_get_all_targets output_var)
 
 
-macro(util_get_all_targets_recursive targets dir)
+macro(TargetUtils_get_all_targets_recursive targets dir)
     get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
     foreach(subdir ${subdirectories})
-        util_get_all_targets_recursive(${targets} ${subdir})
+        TargetUtils_get_all_targets_recursive(${targets} ${subdir})
     endforeach(subdir ${subdirectories})
     get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
     get_property(imported_targets DIRECTORY ${dir} PROPERTY IMPORTED_TARGETS)
     list(APPEND ${targets} ${current_targets})
     list(APPEND ${targets} ${imported_targets})
-endmacro(util_get_all_targets_recursive targets dir)
+endmacro(TargetUtils_get_all_targets_recursive targets dir)
 
 
-function(util_get_child_tests output_var dir)
+function(TargetUtils_get_child_tests output_var dir)
     set(tests)
-    util_get_all_tests_recursive(tests ${dir})
+    TargetUtils_get_all_tests_recursive(tests ${dir})
     set(${output_var} ${tests} PARENT_SCOPE)
-endfunction(util_get_child_tests output_var dir)
+endfunction(TargetUtils_get_child_tests output_var dir)
 
 
-function(util_get_all_tests output_var)
+function(TargetUtils_get_all_tests output_var)
     set(tests)
-    util_get_child_tests(tests ${CMAKE_SOURCE_DIR})
+    TargetUtils_get_child_tests(tests ${CMAKE_SOURCE_DIR})
     set(${output_var} ${tests} PARENT_SCOPE)
-endfunction(util_get_all_tests output_var)
+endfunction(TargetUtils_get_all_tests output_var)
 
 
-macro(util_get_all_tests_recursive tests cmake_dir)
+macro(TargetUtils_get_all_tests_recursive tests cmake_dir)
     get_property(subdirectories DIRECTORY ${cmake_dir} PROPERTY SUBDIRECTORIES)
     foreach(subdir ${subdirectories})
-        util_get_all_tests_recursive(${tests} ${subdir})
+        TargetUtils_get_all_tests_recursive(${tests} ${subdir})
     endforeach(subdir ${subdirectories})
     get_property(current_tests DIRECTORY ${cmake_dir} PROPERTY TESTS)
     list(APPEND ${tests} ${current_tests})
-endmacro(util_get_all_tests_recursive tests cmake_dir)
+endmacro(TargetUtils_get_all_tests_recursive tests cmake_dir)
 
 
-function(util_print_all_targets)
+function(TargetUtils_print_all_targets)
     message("printing targets....")
-    util_get_all_targets(my_targets)
+    TargetUtils_get_all_targets(my_targets)
     foreach(target ${my_targets})
         # This is here because for some reason, 
         # Python::Interpreter is imported transitively by certain
@@ -76,4 +76,4 @@ function(util_print_all_targets)
         endif(TARGET ${target})
     endforeach(target ${my_targets})
     message("")
-endfunction(util_print_all_targets)
+endfunction(TargetUtils_print_all_targets)
