@@ -52,4 +52,7 @@ RUN echo "cmake --version = $(cmake --version)"
 
 WORKDIR /home/root/
 
-COPY 
+COPY cmake .
+COPY tests .
+COPY scripts .
+COPY CMakeLists.txt .
