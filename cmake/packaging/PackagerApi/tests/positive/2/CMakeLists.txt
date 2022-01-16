@@ -47,14 +47,20 @@ PackagerApi_target_install_headers(
 
 
 PackagerApi_add_library(
-    TARGET foo_target 
+    TARGET foo_target_shared 
     PACKAGE foo
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:foo_target_objects>
 )
 
-packager_configure_deb(foo)
+PackagerApi_add_library(
+    TARGET foo_target_static
+    PACKAGE foo
+    TARGET_TYPE STATIC
+    $<TARGET_OBJECTS:foo_target_objects>
+)
 
+packager_configure_deb(foo)
 
 PackagerApi_add_package(
     PACKAGE bar 
@@ -68,12 +74,21 @@ PackagerApi_add_library(
 target_sources(bar_target_objects PRIVATE src/bar.cpp)
 target_include_directories(bar_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(bar_target_objects PUBLIC ${JSONCPP_LIBRARIES})
+
+
 PackagerApi_add_library(
-    TARGET bar_target 
+    TARGET bar_target_shared 
     PACKAGE bar
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:bar_target_objects>
 )
+PackagerApi_add_library(
+    TARGET bar_target_static 
+    PACKAGE bar
+    TARGET_TYPE STATIC
+    $<TARGET_OBJECTS:bar_target_objects>
+)
+
 PackagerApi_target_install_headers(
     PACKAGE bar
     TARGET bar_target_objects
