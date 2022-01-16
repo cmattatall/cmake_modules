@@ -17,8 +17,8 @@ RUN apt-get update && \
 ARG CMAKE_VERSION=3.22
 ARG CMAKE_BUILD=1
 
-RUN mkdir ~/temp
-WORKDIR ~/temp
+RUN mkdir -p /home/root/temp
+WORKDIR /home/root/temp
 RUN wget https://cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_BUILD}.tar.gz
 RUN tar -xzvf cmake-${CMAKE_VERSION}.${CMAKE_BUILD}.tar.gz
 WORKDIR cmake-${CMAKE_VERSION}.${CMAKE_BUILD}/
@@ -27,7 +27,7 @@ RUN apt-get install -y \
         libssl-dev
 RUN ./bootstrap && make -j$(nproc) && make install
 WORKDIR /
-RUN rm -r ~/temp
+RUN rm -r /home/root/temp
 RUN echo "cmake --version = $(cmake --version)"
 
 
@@ -49,3 +49,7 @@ RUN echo "cmake --version = $(cmake --version)"
 #RUN rm /etc/apt/trusted.gpg.d/kitware.gpg
 #RUN apt-get update
 #RUN apt-get install -y cmake
+
+WORKDIR /home/root/
+
+COPY 
