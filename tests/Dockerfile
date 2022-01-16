@@ -56,3 +56,5 @@ COPY cmake .
 COPY tests .
 COPY scripts .
 COPY CMakeLists.txt .
+
+RUN
