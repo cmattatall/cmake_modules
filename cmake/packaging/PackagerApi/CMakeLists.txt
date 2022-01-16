@@ -1,15 +1,19 @@
 cmake_minimum_required(VERSION 3.21)
-include(CMakePackageConfigHelpers)
-include(GNUInstallDirs)
 
 get_filename_component(MODULE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 project(${MODULE_NAME}
     VERSION 0.0.1
     LANGUAGES NONE
 )
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 
 set(MODULE_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}Config.cmake)
 set(MODULE_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MODULE_NAME}ConfigVersion.cmake)
+
+message(DEBUG "MODULE_CONFIG_FILE:${MODULE_CONFIG_FILE}")
+message(DEBUG "MODULE_VERSION_FILE:${MODULE_VERSION_FILE}")
 
 write_basic_package_version_file(
     ${MODULE_VERSION_FILE}

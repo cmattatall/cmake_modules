@@ -24,6 +24,11 @@ function(PackagerApi_get_packages_listfile OUT_packages_listfile)
 endfunction(PackagerApi_get_packages_listfile OUT_packages_listfile)
 
 
+function(PackagerApi_get_packages_install_listfile OUT_packages_install_listfile)
+    set(${OUT_packages_install_listfile} "${CMAKE_BINARY_DIR}/package-install-list.txt" PARENT_SCOPE) # top level of build tree
+endfunction(PackagerApi_get_packages_install_listfile OUT_packages_install_listfile)
+
+
 function(PackagerApi_get_listed_packages OUT_PackagerApi_list)
     PackagerApi_get_packages_listfile(PACKAGE_LISTFILE)
     set(LISTED_PACKAGES "") # empty list
@@ -37,6 +42,22 @@ function(PackagerApi_get_listed_packages OUT_PackagerApi_list)
     message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - LISTED_PACKAGES=\"${LISTED_PACKAGES}\"")
     set(${OUT_PackagerApi_list} ${LISTED_PACKAGES} PARENT_SCOPE)
 endfunction(PackagerApi_get_listed_packages OUT_PackagerApi_list)
+
+
+function(PackagerApi_get_listed_install_packages OUT_PackagerApi_install_list)
+    PackagerApi_get_packages_install_listfile(PACKAGE_INSTALL_LISTFILE)
+    #message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] PACKAGE_INSTALL_LISTFILE:${PACKAGE_INSTALL_LISTFILE}")
+    set(LISTED_PACKAGES "") # empty list
+    if(NOT EXISTS ${PACKAGE_INSTALL_LISTFILE})
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - PACKAGE_INSTALL_LISTFILE:\"${PACKAGE_INSTALL_LISTFILE}\" did not exist. Creating now...")
+        file(TOUCH ${PACKAGE_INSTALL_LISTFILE}) # Create the empty file
+    else()
+        file(STRINGS ${PACKAGE_INSTALL_LISTFILE} LISTED_INSTALL_PACKAGES)
+    endif(NOT EXISTS ${PACKAGE_INSTALL_LISTFILE})
+
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - LISTED_INSTALL_PACKAGES=\"${LISTED_INSTALL_PACKAGES}\"")
+    set(${OUT_PackagerApi_install_list} ${LISTED_INSTALL_PACKAGES} PARENT_SCOPE)
+endfunction(PackagerApi_get_listed_install_packages OUT_PackagerApi_install_list)
 
 
 function(PackagerApi_get_exists PACKAGE OUT_PackagerApi_exists)
@@ -65,6 +86,24 @@ function(PackagerApi_add_to_list PACKAGE)
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - FOUND PACKAGE ${PACKAGE} IN PACKAGE_LIST:\"${PACKAGE_LIST}\". Package will not be appended to the package list.")
     endif(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
 endfunction(PackagerApi_add_to_list PACKAGE)
+
+
+function(PackagerApi_add_to_install_list PACKAGE)
+    PackagerApi_get_packages_install_listfile(PACKAGE_INSTALL_LISTFILE)
+    PackagerApi_get_listed_install_packages(PACKAGE_INSTALL_LIST)
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - PACKAGE_INSTALL_LIST=\"${PACKAGE_INSTALL_LIST}\"")
+    if(NOT (${PACKAGE} IN_LIST PACKAGE_INSTALL_LIST))
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - Appending package ${PACKAGE} to ${PACKAGE_INSTALL_LISTFILE}")
+        file(APPEND ${PACKAGE_INSTALL_LISTFILE} "${PACKAGE}\n")
+
+        PackagerApi_get_listed_install_packages(UPDATED_PACKAGE_LIST)
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - After adding package ${PACKAGE}, UPDATED_PACKAGE_LIST:\"${UPDATED_PACKAGE_LIST}\"")
+
+        message(FATAL_ERROR "wfeokpwe")
+    else()
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - FOUND PACKAGE ${PACKAGE} IN PACKAGE_INSTALL_LIST:\"${PACKAGE_INSTALL_LIST}\". Package will not be appended to the package list.")
+    endif(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
+endfunction(PackagerApi_add_to_install_list PACKAGE)
 
 
 function(PackagerApi_check_exists PACKAGE)
@@ -189,7 +228,6 @@ function(PackagerApi_get_postinst_component_name PACKAGE OUT_postinst_component_
 endfunction(PackagerApi_get_postinst_component_name PACKAGE OUT_postinst_component_name)
 
 
-
 function(PackagerApi_get_version PACKAGE OUT_PackagerApi_version)
     PackagerApi_check_exists(${PACKAGE})
     PackagerApi_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
@@ -221,6 +259,7 @@ endfunction(PackagerApi_get_component_list PACKAGE OUT_components_list)
 
 
 function(PackagerApi_add_component PACKAGE COMPONENT_NAME)
+    PackagerApi_check_exists(${PACKAGE})
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
 endfunction(PackagerApi_add_component PACKAGE COMPONENT_NAME)
@@ -230,6 +269,29 @@ function(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENC
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
 endfunction(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+
+
+function(PackagerApi_get_package_install_choice PACKAGE OUT_package_install_choice)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_listed_install_packages(LISTED_INSTALL_PACKAGES)
+    set(INSTALL_CHOICE FALSE)
+    if(${PACKAGE} IN_LIST LISTED_INSTALL_PACKAGES)
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - found package ${PACKAGE} in LISTED_INSTALL_PACKAGES:${LISTED_INSTALL_PACKAGES}.")
+        set(INSTALL_CHOICE TRUE)
+        break()
+    endif(${PACKAGE} IN_LIST LISTED_INSTALL_PACKAGES)
+    message(WARNING "[ in ${CMAKE_CURRENT_FUNCTION} ] - just before leaving, INSTALL_CHOICE:${INSTALL_CHOICE}")
+    set(${OUT_package_install_choice} ${INSTALL_CHOICE} PARENT_SCOPE)
+endfunction(PackagerApi_get_package_install_choice PACKAGE OUT_package_install_choice)
+
+
+function(PackagerApi_set_package_install_choice PACKAGE install_choice)
+    PackagerApi_check_exists(${PACKAGE})
+    if(${install_choice}) # use implicit conversion to bool
+        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] enabling install for package ${PACKAGE}.")
+    endif(${install_choice})
+endfunction(PackagerApi_set_package_install_choice PACKAGE install_choice)
+
 
 
 ################################################################################
@@ -247,6 +309,7 @@ endmacro(packager_finalize_config)
 # PackagerApi_add( 
 #   PACKAGE my_package    
 #   [VERSION 0.9.1 ] 
+#   [ NO_INSTALL ]
 # )
 function(PackagerApi_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
@@ -256,6 +319,7 @@ function(PackagerApi_add_package)
 
     set(OPTION_ARGS
         # ADD YOUR OPTIONAL ARGUMENTS
+        NO_INSTALL
     )
 
     ##########################
@@ -294,11 +358,14 @@ function(PackagerApi_add_package)
     # CONFIGURE DEFAULTS FOR #
     # SINGLE VALUE ARGUMENTS #
     ##########################
+    # Note: Default values are not supported for members of OPTION_ARGS 
+    # (since not providing an option is FALSE)
+    #
     # The naming is very specific. 
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
-
+    
 
     ############################################################################
     # Perform the argument parsing                                             #
@@ -390,39 +457,48 @@ function(PackagerApi_add_package)
 
     PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
     PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-    install(
-        FILES ${PACKAGE_VERSION_FILE}
-        PERMISSIONS
-            OWNER_WRITE OWNER_READ
-            GROUP_READ
-            WORLD_READ
-        DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-        COMPONENT ${PACKAGE_CMAKE_COMPONENT}
-    )
 
-    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
-    PackagerApi_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
+    if(NOT ${_NO_INSTALL})
+        message(VERBOSE "Package ${_PACKAGE} marked for install. (NO_INSTALL not passed to ${CMAKE_CURRENT_FUNCTION}).")
+        PackagerApi_set_package_install_choice(${_PACKAGE} TRUE)
     
-    file(WRITE ${PACKAGE_CONFIG_FILE}.in "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\n")
-    file(APPEND ${PACKAGE_CONFIG_FILE}.in "include(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\n")
-    file(APPEND ${PACKAGE_CONFIG_FILE}.in "check_required_components(\"@_PACKAGE@\")\n")
+        install(
+            FILES ${PACKAGE_VERSION_FILE}
+            PERMISSIONS
+                OWNER_WRITE OWNER_READ
+                GROUP_READ
+                WORLD_READ
+            DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+            COMPONENT ${PACKAGE_CMAKE_COMPONENT}
+        )
 
-    configure_package_config_file(
-        ${PACKAGE_CONFIG_FILE}.in
-        ${PACKAGE_CONFIG_FILE}
-        INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-    )
-    file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
-    PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-    install(
-        FILES ${PACKAGE_CONFIG_FILE}
-        PERMISSIONS
-            OWNER_WRITE OWNER_READ
-            GROUP_READ
-            WORLD_READ        
-        DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-        COMPONENT ${PACKAGE_CMAKE_COMPONENT}
-    )
+        PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+        PackagerApi_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
+        
+        file(WRITE ${PACKAGE_CONFIG_FILE}.in "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE}.in "include(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\n")
+        file(APPEND ${PACKAGE_CONFIG_FILE}.in "check_required_components(\"@_PACKAGE@\")\n")
+
+        configure_package_config_file(
+            ${PACKAGE_CONFIG_FILE}.in
+            ${PACKAGE_CONFIG_FILE}
+            INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+        )
+        file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
+        PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+        install(
+            FILES ${PACKAGE_CONFIG_FILE}
+            PERMISSIONS
+                OWNER_WRITE OWNER_READ
+                GROUP_READ
+                WORLD_READ        
+            DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+            COMPONENT ${PACKAGE_CMAKE_COMPONENT}
+        )
+    else()
+        message(VERBOSE "Package ${_PACKAGE} not marked for install. (NO_INSTALL passed to ${CMAKE_CURRENT_FUNCTION}).")
+    endif(NOT ${_NO_INSTALL})
+
 
     # Get component names
     PackagerApi_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
@@ -450,6 +526,7 @@ endfunction(PackagerApi_add_package)
 #    PACKAGE package 
 #    TARGET target_name 
 #    TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
+#    [ NO_INSTALL ]
 # )
 function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
@@ -459,6 +536,7 @@ function(PackagerApi_add_library)
 
     set(OPTION_ARGS
         # ADD YOUR OPTIONAL ARGUMENTS
+        NO_INSTALL
     )
 
     ##########################
@@ -505,6 +583,9 @@ function(PackagerApi_add_library)
     # CONFIGURE DEFAULTS FOR #
     # SINGLE VALUE ARGUMENTS #
     ##########################
+    # Note: Default values are not supported for members of OPTION_ARGS 
+    # (since not providing an option is FALSE)
+    #
     # The naming is very specific. 
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
@@ -543,7 +624,7 @@ function(PackagerApi_add_library)
     endif(NUM_MISSING_KWARGS GREATER 0)
 
     # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
         foreach(arg ${${arglist}})
             set(ARG_VALUE ${_${arg}})
             if(NOT DEFINED ARG_VALUE)
@@ -563,7 +644,7 @@ function(PackagerApi_add_library)
                 endif(DEFINED ${arg}-CHOICES)
             endif(NOT DEFINED ARG_VALUE)
         endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
@@ -647,34 +728,51 @@ function(PackagerApi_add_library)
     PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
     PackagerApi_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
 
-    # Don't install object or interface libraries
-    if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
-        message(VERBOSE "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
-    else()
+    if(NOT _NO_INSTALL)
 
-        # After the target is installed, if another project or target imports it
-        # the header directories will have to be searched for in the 
-        # system install tree and not the current build tree
-        target_include_directories(${_TARGET} 
-            PUBLIC
-                $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
-        )
+        PackagerApi_get_package_install_choice(${_PACKAGE} PACKAGE_INSTALL_CHOICE)
         
-        install(
-            TARGETS ${_TARGET}
-            EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
-            DESTINATION ${PACKAGE_LIB_INSTALL_DIR}
-            COMPONENT ${PACKAGE_LIB_COMPONENT}
-        )
+        message(WARNING "[ in ${CMAKE_CURRENT_FUNCTION} ] - PACKAGE_INSTALL_CHOICE for package: ${_PACKAGE} == ${PACKAGE_INSTALL_CHOICE}")
+        
+        if(${PACKAGE_INSTALL_CHOICE})
 
-        install(
-            EXPORT ${PACKAGE_EXPORT_NAME}
-            NAMESPACE ${PACKAGE_NAMESPACE}::
-            DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
-            COMPONENT ${PACKAGE_CMAKE_COMPONENT}
-        )
+            # Don't install object or interface libraries
+            if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
+                message(VERBOSE "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
+            else()
 
-    endif()
+                # After the target is installed, if another project or target imports it
+                # the header directories will have to be searched for in the 
+                # system install tree and not the current build tree
+                target_include_directories(${_TARGET} 
+                    PUBLIC
+                        $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
+                )
+                
+                install(
+                    TARGETS ${_TARGET}
+                    EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
+                    DESTINATION ${PACKAGE_LIB_INSTALL_DIR}
+                    COMPONENT ${PACKAGE_LIB_COMPONENT}
+                )
+
+                install(
+                    EXPORT ${PACKAGE_EXPORT_NAME}
+                    NAMESPACE ${PACKAGE_NAMESPACE}::
+                    DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+                    COMPONENT ${PACKAGE_CMAKE_COMPONENT}
+                )
+
+            endif()
+
+        else()
+            message(WARNING "DONT FORGET TO CHANGE THIS TO FATAL ERROR ONCE DEBUGGING IS DONE")
+            return()
+            message(FATAL_ERROR "Library target ${_TARGET} configured for install, but parent package: ${_PACKAGE} is not. Cannot add target: ${_TARGET} to package whose export target list does not exist!")
+        endif(${PACKAGE_INSTALL_CHOICE})
+
+    endif(NOT _NO_INSTALL)
+
     
 endfunction(PackagerApi_add_library)
 
@@ -733,6 +831,9 @@ function(PackagerApi_target_install_headers)
     # CONFIGURE DEFAULTS FOR #
     # SINGLE VALUE ARGUMENTS #
     ##########################
+    # Note: Default values are not supported for members of OPTION_ARGS 
+    # (since not providing an option is FALSE)
+    #
     # The naming is very specific. 
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
