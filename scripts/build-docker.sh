@@ -1,5 +1,9 @@
 #!/bin/bash
-# Bash script to build the docker image
+# Bash script to build the docker image and run the tests
+# 
+# To properly test if the modules are installed, we need to do the testing
+# in a fresh virtual environment 
+# (because host environment could be coincidentally passing)
 set -e
 THIS_SCRIPT=$0
 

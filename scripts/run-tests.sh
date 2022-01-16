@@ -1,18 +1,18 @@
 #!/bin/bash
 # Bash script to run the tests 
 # 
-# MEANT TO BE EXECUTED FROM WITHIN A DOCKER IMAGE
+# MEANT TO BE EXECUTED FROM WITHIN A DOCKER IMAGE.
 set -e
 
-function dirstack_cleanup {
-    while [ $(popd > /dev/null)) ]; do 
+function dirstack_cleanup () {
+    while [ $(popd > /dev/null) ]; do 
         : # this is a bash NO-OP
     done
 }
 trap dirstack_cleanup EXIT
 
 
-function setup () {
+function install_modules () {
     cmake -S . -B build
     pushd build
         make -j$(nproc)
@@ -38,7 +38,7 @@ function run_tests () {
 
 
 function main () {
-    setup
+    install_modules
     run_tests
 }
 
