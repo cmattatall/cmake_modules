@@ -393,8 +393,6 @@ function(PackagerApi_add_package)
     PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
     PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
 
-    PackagerApi_set_package_install_choice(${_PACKAGE} TRUE)
-
     install(
         FILES ${PACKAGE_VERSION_FILE}
         PERMISSIONS
