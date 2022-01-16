@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-set(MODULE_NAME TargetUtils)
-
-project(${MODULE_NAME} 
+get_filename_component(MODULE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+project(${MODULE_NAME}
     VERSION 0.0.1
     LANGUAGES NONE
 )
@@ -12,24 +11,11 @@ project(${MODULE_NAME}
 set(MODULE_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}Config.cmake)
 set(MODULE_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MODULE_NAME}ConfigVersion.cmake)
 
-install(
-    FILES ${MODULE_CONFIG_FILE}
-    COMPONENT ${MODULE_NAME}
-    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${MODULE_NAME}/"
-)
-
-# We can make this module test itself.
-if(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-    add_subdirectory(tests)
-endif(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-
-#[[
 write_basic_package_version_file(
     ${MODULE_VERSION_FILE}
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
-
 
 install(
     FILES 
@@ -39,4 +25,8 @@ install(
     DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${MODULE_NAME}/"
 )
 
-#]]
+
+# We can make this module test itself.
+if(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
+    add_subdirectory(tests)
+endif(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))

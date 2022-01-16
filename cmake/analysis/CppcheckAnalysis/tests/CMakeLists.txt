@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.21)
+
+file(GLOB_RECURSE TEST_SOURCE_CMAKELISTS "*/CMakeLists\.txt")
+
+foreach(CMAKELISTS ${TEST_SOURCE_CMAKELISTS})
+    file(RELATIVE_PATH CMAKELISTS_PATH_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKELISTS})
+    get_filename_component(TEST_SUBDIR_RELATIVE ${CMAKELISTS_PATH_RELATIVE} DIRECTORY)
+    message(DEBUG "Adding subdirectory ${TEST_SUBDIR_RELATIVE} from ${CMAKE_CURRENT_SOURCE_DIR} as part of test suite for project ${PROJECT_NAME}")
+    add_subdirectory(${TEST_SUBDIR_RELATIVE})
+endforeach(CMAKELISTS ${TEST_SOURCE_CMAKELISTS})

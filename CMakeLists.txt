@@ -18,8 +18,7 @@ foreach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
 endforeach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
 
 
-
-include(packaging/PackageApi/PackageApiConfig)
+include(packaging/PackagerApi/PackagerApiConfig)
 include(packaging/PackagerDeb/PackagerDebConfig)
 
 add_subdirectory(cmake)

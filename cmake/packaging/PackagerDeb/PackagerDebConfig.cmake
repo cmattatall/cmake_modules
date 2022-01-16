@@ -46,16 +46,16 @@ endif(NOT CMAKE_CROSSCOMPILING)
 
 function(packager_configure_deb PKG)
     string(TOUPPER ${PKG} PKG_UPPER)
-    package_get_version(${PKG} PKG_VER)
+    PackagerApi_get_version(${PKG} PKG_VER)
     set(PKG_ARCH ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
     set(PKG_NAME "${PKG}")
     set(CPACK_DEBIAN_${PKG_UPPER}_FILE_NAME "${PKG_NAME}_${PKG_VER}_${PKG_ARCH}.deb" CACHE INTERNAL "")
     set(CPACK_DEBIAN_${PKG_UPPER}_PACKAGE_SHLIBDEPS ON CACHE INTERNAL "")
 
-    package_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
-    package_get_library_files_install_reldir(${PKG} PKG_INSTALL_LIBDIR_RELATIVE)
-    package_get_postinst_component_name(${PKG} PKG_POSTINST_COMPONENT_NAME)
-    package_get_ldconfig_install_absdir(${PKG} PKG_LDCONFIG_INSTALL_DIR)
+    PackagerApi_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
+    PackagerApi_get_library_files_install_reldir(${PKG} PKG_INSTALL_LIBDIR_RELATIVE)
+    PackagerApi_get_postinst_component_name(${PKG} PKG_POSTINST_COMPONENT_NAME)
+    PackagerApi_get_ldconfig_install_absdir(${PKG} PKG_LDCONFIG_INSTALL_DIR)
 
     set(PKG_INSTALL_LIBDIR_ABSOLUTE "${CPACK_PACKAGING_INSTALL_PREFIX}/${PKG_INSTALL_LIBDIR_RELATIVE}")
 

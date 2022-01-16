@@ -3,19 +3,19 @@ cmake_minimum_required(VERSION 3.20)
 project(foobar VERSION 0.1.2)
 
 find_package(GraphvizDocugen REQUIRED)
-find_package(PackageApi REQUIRED)
+find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
 
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
-package_add(
+PackagerApi_add_package(
     PACKAGE foo
     VERSION 2.0.1    
 )
 
-package_add_library(
+PackagerApi_add_library(
     TARGET foo_target_objects
     PACKAGE foo
     TARGET_TYPE OBJECT
@@ -24,14 +24,14 @@ target_sources(foo_target_objects PRIVATE src/foo.cpp)
 target_include_directories(foo_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(foo_target_objects PUBLIC ${JSONCPP_LIBRARIES})
 
-package_target_install_headers(
+PackagerApi_target_install_headers(
     PACKAGE foo
     TARGET foo_target_objects
     FILES include/foo.hpp
 )
 
 
-package_add_library(
+PackagerApi_add_library(
     TARGET foo_target 
     PACKAGE foo
     TARGET_TYPE SHARED
@@ -41,11 +41,11 @@ package_add_library(
 packager_configure_deb(foo)
 
 
-package_add(
+PackagerApi_add_package(
     PACKAGE bar 
     VERSION 9.9.9
 )
-package_add_library(
+PackagerApi_add_library(
     TARGET bar_target_objects
     PACKAGE bar
     TARGET_TYPE OBJECT
@@ -53,13 +53,13 @@ package_add_library(
 target_sources(bar_target_objects PRIVATE src/bar.cpp)
 target_include_directories(bar_target_objects PUBLIC ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(bar_target_objects PUBLIC ${JSONCPP_LIBRARIES})
-package_add_library(
+PackagerApi_add_library(
     TARGET bar_target 
     PACKAGE bar
     TARGET_TYPE SHARED
     $<TARGET_OBJECTS:bar_target_objects>
 )
-package_target_install_headers(
+PackagerApi_target_install_headers(
     PACKAGE bar
     TARGET bar_target_objects
     FILES include/bar.hpp

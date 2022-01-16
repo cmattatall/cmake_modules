@@ -19,13 +19,13 @@ find_package(PkgConfig REQUIRED)
 find_package(Packager REQUIRED)
 
 
-function(package_get_packages_listfile OUT_packages_listfile)
+function(PackagerApi_get_packages_listfile OUT_packages_listfile)
     set(${OUT_packages_listfile} "${CMAKE_BINARY_DIR}/package-list.txt" PARENT_SCOPE) # top level of build tree
-endfunction(package_get_packages_listfile OUT_packages_listfile)
+endfunction(PackagerApi_get_packages_listfile OUT_packages_listfile)
 
 
-function(package_get_listed_packages OUT_package_list)
-    package_get_packages_listfile(PACKAGE_LISTFILE)
+function(PackagerApi_get_listed_packages OUT_PackagerApi_list)
+    PackagerApi_get_packages_listfile(PACKAGE_LISTFILE)
     set(LISTED_PACKAGES "") # empty list
     if(NOT EXISTS ${PACKAGE_LISTFILE})
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - PACKAGE_LISTFILE:\"${PACKAGE_LISTFILE}\" did not exist. Creating now...")
@@ -35,180 +35,180 @@ function(package_get_listed_packages OUT_package_list)
     endif(NOT EXISTS ${PACKAGE_LISTFILE})
 
     message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - LISTED_PACKAGES=\"${LISTED_PACKAGES}\"")
-    set(${OUT_package_list} ${LISTED_PACKAGES} PARENT_SCOPE)
-endfunction(package_get_listed_packages OUT_package_list)
+    set(${OUT_PackagerApi_list} ${LISTED_PACKAGES} PARENT_SCOPE)
+endfunction(PackagerApi_get_listed_packages OUT_PackagerApi_list)
 
 
-function(package_get_exists PACKAGE OUT_package_exists)
-    package_get_listed_packages(PACKAGE_LIST)
+function(PackagerApi_get_exists PACKAGE OUT_PackagerApi_exists)
+    PackagerApi_get_listed_packages(PACKAGE_LIST)
     message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ] - PACKAGE_LIST=\"${PACKAGE_LIST}\"")
     if(${PACKAGE} IN_LIST PACKAGE_LIST)
-        set(${OUT_package_exists} 1 PARENT_SCOPE)
+        set(${OUT_PackagerApi_exists} 1 PARENT_SCOPE)
     else()
-        set(${OUT_package_exists} 0 PARENT_SCOPE)
+        set(${OUT_PackagerApi_exists} 0 PARENT_SCOPE)
     endif(${PACKAGE} IN_LIST PACKAGE_LIST)
-endfunction(package_get_exists PACKAGE OUT_package_exists)
+endfunction(PackagerApi_get_exists PACKAGE OUT_PackagerApi_exists)
 
 
-function(package_add_to_list PACKAGE)
-    package_get_packages_listfile(PACKAGE_LISTFILE)
-    package_get_listed_packages(PACKAGE_LIST)
+function(PackagerApi_add_to_list PACKAGE)
+    PackagerApi_get_packages_listfile(PACKAGE_LISTFILE)
+    PackagerApi_get_listed_packages(PACKAGE_LIST)
     message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - PACKAGE_LIST=\"${PACKAGE_LIST}\"")
     if(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - Appending package ${PACKAGE} to ${PACKAGE_LISTFILE}")
         file(APPEND ${PACKAGE_LISTFILE} "${PACKAGE}\n")
 
-        package_get_listed_packages(UPDATED_PACKAGE_LIST)
+        PackagerApi_get_listed_packages(UPDATED_PACKAGE_LIST)
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - After adding package ${PACKAGE}, UPDATED_PACKAGE_LIST:\"${UPDATED_PACKAGE_LIST}\"")
 
     else()
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION}] - FOUND PACKAGE ${PACKAGE} IN PACKAGE_LIST:\"${PACKAGE_LIST}\". Package will not be appended to the package list.")
     endif(NOT (${PACKAGE} IN_LIST PACKAGE_LIST))
-endfunction(package_add_to_list PACKAGE)
+endfunction(PackagerApi_add_to_list PACKAGE)
 
 
-function(package_check_exists PACKAGE)
-    package_get_exists(${PACKAGE} PACKAGE_EXISTS)
+function(PackagerApi_check_exists PACKAGE)
+    PackagerApi_get_exists(${PACKAGE} PACKAGE_EXISTS)
     if(NOT ${PACKAGE_EXISTS})
         message(FATAL_ERROR "Cannot invoke ${CMAKE_CURRENT_FUNCTION} with arguments: ${ARGV}. Reason: package: \"${PACKAGE}\" does not exist.")
     endif(NOT ${PACKAGE_EXISTS})
-endfunction(package_check_exists PACKAGE)
+endfunction(PackagerApi_check_exists PACKAGE)
 
 
-function(package_get_staging_dir PACKAGE OUT_package_staging_dir)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
+    PackagerApi_check_exists(${PACKAGE})
     set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}")
     get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
     if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
         file(MAKE_DIRECTORY ${PARENT_PACKAGE_STAGING_DIR})
     endif(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
-    set(${OUT_package_staging_dir} ${PACKAGE_STAGING_DIR} PARENT_SCOPE)
-endfunction(package_get_staging_dir PACKAGE OUT_package_staging_dir)
+    set(${OUT_PackagerApi_staging_dir} ${PACKAGE_STAGING_DIR} PARENT_SCOPE)
+endfunction(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
 
 
-function(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_staging_dir)
-    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
-    set(${OUT_package_cmake_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/cmake" PARENT_SCOPE)
-endfunction(package_get_cmake_files_staging_dir PACKAGE OUT_package_cmake_files_staging_dir)
+function(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
+    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    set(${OUT_PackagerApi_cmake_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/cmake" PARENT_SCOPE)
+endfunction(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
 
 
-function(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
-    package_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
-    set(${OUT_package_runtime_config_staging_dir} "${PACKAGE_STAGING_PREFIX}/runtime" PARENT_SCOPE)
-endfunction(package_get_runtime_config_staging_dir PACKAGE OUT_package_runtime_config_staging_dir)
+function(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
+    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    set(${OUT_PackagerApi_runtime_config_staging_dir} "${PACKAGE_STAGING_PREFIX}/runtime" PARENT_SCOPE)
+endfunction(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
 
 
-function(package_get_version_file_path PACKAGE OUT_package_version_file_path)
-    package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
-    set(${OUT_package_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
-endfunction(package_get_version_file_path PACKAGE OUT_package_version_file_path)
+function(PackagerApi_get_version_file_path PACKAGE OUT_PackagerApi_version_file_path)
+    PackagerApi_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
+    set(${OUT_PackagerApi_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
+endfunction(PackagerApi_get_version_file_path PACKAGE OUT_PackagerApi_version_file_path)
 
 
-function(package_get_config_file_path PACKAGE OUT_package_config_file_path)
-    package_check_exists(${PACKAGE})
-    package_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
-    set(${OUT_package_config_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
-endfunction(package_get_config_file_path PACKAGE OUT_package_config_file_path)
+function(PackagerApi_get_config_file_path PACKAGE OUT_PackagerApi_config_file_path)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
+    set(${OUT_PackagerApi_config_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}Config.cmake" PARENT_SCOPE)
+endfunction(PackagerApi_get_config_file_path PACKAGE OUT_PackagerApi_config_file_path)
 
 
-function(package_get_targets_export_name PACKAGE OUT_export_name)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_targets_export_name PACKAGE OUT_export_name)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_export_name} "${PACKAGE}Targets" PARENT_SCOPE)
-endfunction(package_get_targets_export_name PACKAGE OUT_export_name)
+endfunction(PackagerApi_get_targets_export_name PACKAGE OUT_export_name)
 
 
-function(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
-    package_check_exists(${PACKAGE})
-    set(${OUT_package_targets_namespace} "${PACKAGE}" PARENT_SCOPE)
-endfunction(package_get_targets_namespace PACKAGE OUT_package_targets_namespace)
+function(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_namespace)
+    PackagerApi_check_exists(${PACKAGE})
+    set(${OUT_PackagerApi_targets_namespace} "${PACKAGE}" PARENT_SCOPE)
+endfunction(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_namespace)
 
 
-function(package_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_cmake_files_install_reldir} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
-endfunction(package_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
+endfunction(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
 
 
-function(package_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_library_files_install_reldir} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
-endfunction(package_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
+endfunction(PackagerApi_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
 
 
-function(package_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_header_files_install_reldir} ${CMAKE_INSTALL_INCLUDEDIR}/${PACKAGE} PARENT_SCOPE)
-endfunction(package_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
+endfunction(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
 
 
-function(package_get_header_component_name PACKAGE OUT_header_component_name)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_header_component_name} "${PACKAGE}Dev" PARENT_SCOPE)
-endfunction(package_get_header_component_name PACKAGE OUT_header_component_name)
+endfunction(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
 
 
-function(package_get_library_component_name PACKAGE OUT_library_component_name)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_library_component_name PACKAGE OUT_library_component_name)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_library_component_name} "${PACKAGE}Lib" PARENT_SCOPE)
-endfunction(package_get_library_component_name PACKAGE OUT_library_component_name)
+endfunction(PackagerApi_get_library_component_name PACKAGE OUT_library_component_name)
 
 
-function(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_cmake_component_name PACKAGE OUT_cmake_component_name)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_cmake_component_name} "${PACKAGE}Cmake" PARENT_SCOPE)
-endfunction(package_get_cmake_component_name PACKAGE OUT_cmake_component_name)
+endfunction(PackagerApi_get_cmake_component_name PACKAGE OUT_cmake_component_name)
 
 
-function(package_get_executable_component_name PACKAGE OUT_executable_component_name)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_executable_component_name PACKAGE OUT_executable_component_name)
+    PackagerApi_check_exists(${PACKAGE})
     set(${OUT_executable_component_name} "${PACKAGE}Bin" PARENT_SCOPE)
-endfunction(package_get_executable_component_name PACKAGE OUT_executable_component_name)
+endfunction(PackagerApi_get_executable_component_name PACKAGE OUT_executable_component_name)
 
 
-function(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
-    package_check_exists(${PACKAGE})
-    package_get_runtime_config_staging_dir(${PACKAGE} PACKAGE_RUNTIME_STAGING_DIR)
-    set(${OUT_package_ldconfig_filepath} "${PACKAGE_RUNTIME_STAGING_DIR}/${PACKAGE}.conf" PARENT_SCOPE)
-endfunction(package_get_ldconfig_file_path PACKAGE OUT_package_ldconfig_filepath)
+function(PackagerApi_get_ldconfig_file_path PACKAGE OUT_PackagerApi_ldconfig_filepath)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_runtime_config_staging_dir(${PACKAGE} PACKAGE_RUNTIME_STAGING_DIR)
+    set(${OUT_PackagerApi_ldconfig_filepath} "${PACKAGE_RUNTIME_STAGING_DIR}/${PACKAGE}.conf" PARENT_SCOPE)
+endfunction(PackagerApi_get_ldconfig_file_path PACKAGE OUT_PackagerApi_ldconfig_filepath)
 
 
-function(package_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
+    PackagerApi_check_exists(${PACKAGE})
     if(APPLE OR (NOT UNIX)) # mac OS doesn't use ldconfig
         message(FATAL_ERROR "Invocation of ${CMAKE_CURRENT_FUNCTION} is meaningless on the current platform. ldconfig is not used.")
     endif()
     set(LDCONFIG_INSTALL_DIR "/etc/ld.so.conf.d/${PACKAGE}/")
     set(${OUT_ldconfig_install_absdir} ${LDCONFIG_INSTALL_DIR} PARENT_SCOPE)
-endfunction(package_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
+endfunction(PackagerApi_get_ldconfig_install_absdir PACKAGE OUT_ldconfig_install_absdir)
 
 
-function(package_get_postinst_component_name PACKAGE OUT_postinst_component_name)
-    package_check_exists(${PACKAGE})
-    package_get_library_component_name(${PACKAGE} PKG_LIBRARY_COMPONENT_NAME)
+function(PackagerApi_get_postinst_component_name PACKAGE OUT_postinst_component_name)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_library_component_name(${PACKAGE} PKG_LIBRARY_COMPONENT_NAME)
     set(${OUT_postinst_component_name} ${PKG_LIBRARY_COMPONENT_NAME} PARENT_SCOPE)
-endfunction(package_get_postinst_component_name PACKAGE OUT_postinst_component_name)
+endfunction(PackagerApi_get_postinst_component_name PACKAGE OUT_postinst_component_name)
 
 
 
-function(package_get_version PACKAGE OUT_package_version)
-    package_check_exists(${PACKAGE})
-    package_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
+function(PackagerApi_get_version PACKAGE OUT_PackagerApi_version)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_version_file_path(${PACKAGE} PACKAGE_VERSION_FILE)
     if(NOT (EXISTS ${PACKAGE_VERSION_FILE}))
         message(FATAL_ERROR "Package version file: ${PACKAGE_VERSION_FILE} doesn't exist.")
     endif(NOT (EXISTS ${PACKAGE_VERSION_FILE}))
     include(${PACKAGE_VERSION_FILE})
-    set(${OUT_package_version} ${PACKAGE_VERSION} PARENT_SCOPE)
-endfunction(package_get_version PACKAGE OUT_package_version)
+    set(${OUT_PackagerApi_version} ${PACKAGE_VERSION} PARENT_SCOPE)
+endfunction(PackagerApi_get_version PACKAGE OUT_PackagerApi_version)
 
 
-function(package_get_component_list PACKAGE OUT_components_list)
-    package_check_exists(${PACKAGE})
+function(PackagerApi_get_component_list PACKAGE OUT_components_list)
+    PackagerApi_check_exists(${PACKAGE})
     
     # Use internal API to get component names 
-    package_get_header_component_name(${PACKAGE} HEADER_COMPONENT)
-    package_get_library_component_name(${PACKAGE} LIBRARY_COMPONENT)
-    package_get_cmake_component_name(${PACKAGE} CMAKE_COMPONENT)
-    package_get_executable_component_name(${PACKAGE} EXECUTABLE_COMPONENT)
+    PackagerApi_get_header_component_name(${PACKAGE} HEADER_COMPONENT)
+    PackagerApi_get_library_component_name(${PACKAGE} LIBRARY_COMPONENT)
+    PackagerApi_get_cmake_component_name(${PACKAGE} CMAKE_COMPONENT)
+    PackagerApi_get_executable_component_name(${PACKAGE} EXECUTABLE_COMPONENT)
 
 
     set(PACKAGE_COMPONENT_LIST) # empty list
@@ -217,19 +217,19 @@ function(package_get_component_list PACKAGE OUT_components_list)
     list(APPEND PACKAGE_COMPONENT_LIST ${CMAKE_COMPONENT})
     list(APPEND PACKAGE_COMPONENT_LIST ${EXECUTABLE_COMPONENT})
     set(${OUT_components_list} ${PACKAGE_COMPONENT_LIST} PARENT_SCOPE)
-endfunction(package_get_component_list PACKAGE OUT_components_list)
+endfunction(PackagerApi_get_component_list PACKAGE OUT_components_list)
 
 
-function(package_add_component PACKAGE COMPONENT_NAME)
+function(PackagerApi_add_component PACKAGE COMPONENT_NAME)
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_GROUP ${PACKAGE} CACHE INTERNAL "")
-endfunction(package_add_component PACKAGE COMPONENT_NAME)
+endfunction(PackagerApi_add_component PACKAGE COMPONENT_NAME)
 
 
-function(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+function(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
     string(TOUPPER ${COMPONENT_NAME} COMPONENT_NAME_UPPER)
     set(CPACK_COMPONENT_${COMPONENT_NAME_UPPER}_DEPENDS ${COMPONENT_DEPENDENCY_NAME} CACHE INTERNAL "")
-endfunction(package_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
+endfunction(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
 
 
 ################################################################################
@@ -244,11 +244,11 @@ endmacro(packager_finalize_config)
 
 
 # Usage:
-# package_add( 
+# PackagerApi_add( 
 #   PACKAGE my_package    
 #   [VERSION 0.9.1 ] 
 # )
-function(package_add)
+function(PackagerApi_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -364,13 +364,13 @@ function(package_add)
         message(FATAL_ERROR "Unknown arguments: \"${_UNPARSED_ARGUMENTS}\" given to ${CMAKE_CURRENT_FUNCTION}")
     endif(NUM_UNPARSED_ARGS GREATER 0)
 
-    package_get_exists(${_PACKAGE} PACKAGE_EXISTS)
-    message(DEBUG "After call to package_get_exists for package : ${_PACKAGE}, PACKAGE_EXISTS=${PACKAGE_EXISTS}")
+    PackagerApi_get_exists(${_PACKAGE} PACKAGE_EXISTS)
+    message(DEBUG "After call to PackagerApi_get_exists for package : ${_PACKAGE}, PACKAGE_EXISTS=${PACKAGE_EXISTS}")
     if(PACKAGE_EXISTS)
         message(STATUS "PACKAGE: \"${_PACKAGE}\" already exists. Not adding to package list.")
     else()
         message(DEBUG "Adding package: ${_PACKAGE} to package list.")
-        package_add_to_list(${_PACKAGE})
+        PackagerApi_add_to_list(${_PACKAGE})
     endif(PACKAGE_EXISTS)
 
     util_is_version_valid(${_VERSION} VALID_VERSION)
@@ -381,15 +381,15 @@ function(package_add)
         message(VERBOSE "Package \"${_PACKAGE}\" version \"${_VERSION}\" is valid.")
     endif(NOT VALID_VERSION)
     
-    package_get_version_file_path(${_PACKAGE} PACKAGE_VERSION_FILE)
+    PackagerApi_get_version_file_path(${_PACKAGE} PACKAGE_VERSION_FILE)
     write_basic_package_version_file(
         ${PACKAGE_VERSION_FILE} 
         VERSION ${_VERSION} 
         COMPATIBILITY AnyNewerVersion
     )
 
-    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_VERSION_FILE}
         PERMISSIONS
@@ -400,8 +400,8 @@ function(package_add)
         COMPONENT ${PACKAGE_CMAKE_COMPONENT}
     )
 
-    package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
-    package_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
+    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+    PackagerApi_get_config_file_path(${_PACKAGE} PACKAGE_CONFIG_FILE)
     
     file(WRITE ${PACKAGE_CONFIG_FILE}.in "@PACKAGE_INIT@\ninclude(CMakeFindDependencyMacro)\n")
     file(APPEND ${PACKAGE_CONFIG_FILE}.in "include(\"\${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_EXPORT_NAME@.cmake\")\n")
@@ -413,7 +413,7 @@ function(package_add)
         INSTALL_DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
     )
     file(REMOVE ${PACKAGE_CONFIG_FILE}.in)
-    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
     install(
         FILES ${PACKAGE_CONFIG_FILE}
         PERMISSIONS
@@ -425,33 +425,33 @@ function(package_add)
     )
 
     # Get component names
-    package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
-    package_get_library_component_name(${_PACKAGE} PACKAGE_LIBRARY_COMPONENT)
-    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_executable_component_name(${_PACKAGE} PACKAGE_EXECUTABLE_COMPONENT)
+    PackagerApi_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
+    PackagerApi_get_library_component_name(${_PACKAGE} PACKAGE_LIBRARY_COMPONENT)
+    PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    PackagerApi_get_executable_component_name(${_PACKAGE} PACKAGE_EXECUTABLE_COMPONENT)
 
     # Add components to the package
-    package_add_component(${_PACKAGE} ${PACKAGE_LIBRARY_COMPONENT})
-    package_add_component(${_PACKAGE} ${PACKAGE_EXECUTABLE_COMPONENT})
+    PackagerApi_add_component(${_PACKAGE} ${PACKAGE_LIBRARY_COMPONENT})
+    PackagerApi_add_component(${_PACKAGE} ${PACKAGE_EXECUTABLE_COMPONENT})
 
-    package_add_component(${_PACKAGE} ${PACKAGE_HEADER_COMPONENT})
-    package_add_component_dependency(${PACKAGE_HEADER_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
+    PackagerApi_add_component(${_PACKAGE} ${PACKAGE_HEADER_COMPONENT})
+    PackagerApi_add_component_dependency(${PACKAGE_HEADER_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
 
-    package_add_component(${_PACKAGE} ${PACKAGE_CMAKE_COMPONENT})
-    package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
-    package_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_EXECUTABLE_COMPONENT})
+    PackagerApi_add_component(${_PACKAGE} ${PACKAGE_CMAKE_COMPONENT})
+    PackagerApi_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_LIBRARY_COMPONENT})
+    PackagerApi_add_component_dependency(${PACKAGE_CMAKE_COMPONENT} ${PACKAGE_EXECUTABLE_COMPONENT})
 
-endfunction(package_add)
+endfunction(PackagerApi_add_package)
 
 
 
 # Usage:
-# package_add_library(
+# PackagerApi_add_library(
 #    PACKAGE package 
 #    TARGET target_name 
 #    TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
 # )
-function(package_add_library)
+function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -629,23 +629,23 @@ function(package_add_library)
             POSITION_INDEPENDENT_CODE ON
     )
 
-    package_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
+    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
 
-    package_get_version(${_PACKAGE} PACKAGE_VERSION)
+    PackagerApi_get_version(${_PACKAGE} PACKAGE_VERSION)
     set_target_properties(${_TARGET} PROPERTIES VERSION "${PACKAGE_VERSION}")
     if(_TARGET_TYPE STREQUAL SHARED)
         set_target_properties(${_TARGET} PROPERTIES SOVERSION "${PACKAGE_VERSION}")    
     endif(_TARGET_TYPE STREQUAL SHARED)
 
-    package_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
-    package_get_library_component_name(${_PACKAGE} PACKAGE_LIB_COMPONENT)
+    PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    PackagerApi_get_library_component_name(${_PACKAGE} PACKAGE_LIB_COMPONENT)
 
-    package_get_library_files_install_reldir(${_PACKAGE} PACKAGE_LIB_INSTALL_DIR)
-    package_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
-    package_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_INSTALL_DIR)
+    PackagerApi_get_library_files_install_reldir(${_PACKAGE} PACKAGE_LIB_INSTALL_DIR)
+    PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    PackagerApi_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_INSTALL_DIR)
     
-    package_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
-    package_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
+    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+    PackagerApi_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
 
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
@@ -676,16 +676,16 @@ function(package_add_library)
 
     endif()
     
-endfunction(package_add_library)
+endfunction(PackagerApi_add_library)
 
 
 # Usage:
-# package_target_install_headers(
+# PackagerApi_target_install_headers(
 #   PACKAGE my_package
 #   TARGET my_target
 #   HEADERS { header1.hpp header2.h header3.hpp }
 # )
-function(package_target_install_headers)
+function(PackagerApi_target_install_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -802,8 +802,8 @@ function(package_target_install_headers)
     endif(NOT TARGET ${_TARGET})
     
 
-    package_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
-    package_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
+    PackagerApi_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
+    PackagerApi_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
 
     foreach(HEADER_FILE ${_HEADERS})
 
@@ -822,7 +822,7 @@ function(package_target_install_headers)
     endforeach(HEADER_FILE ${_HEADERS})
 
 
-endfunction(package_target_install_headers)
+endfunction(PackagerApi_target_install_headers)
 
 
 ################################################################################
