@@ -8,10 +8,8 @@ function main () {
     pushd build
         make -j$(nproc)
         ctest -V
-        #cpack
+        cpack
         #find . -name "*\.deb" -exec dpkg -i {} \;
-
-
     popd
 }
 
