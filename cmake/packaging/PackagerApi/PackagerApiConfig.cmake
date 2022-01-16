@@ -665,11 +665,7 @@ function(PackagerApi_add_library)
 
         # After the target is installed, if another project or target imports it
         # the header directories will have to be searched for in the 
-                # the header directories will have to be searched for in the 
-        # the header directories will have to be searched for in the 
         # system install tree and not the current build tree
-        target_include_directories(${_TARGET} 
-                target_include_directories(${_TARGET} 
         target_include_directories(${_TARGET} 
             PUBLIC
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
