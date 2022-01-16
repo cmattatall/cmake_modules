@@ -14,3 +14,5 @@ function main () {
 
     popd
 }
+
+main
