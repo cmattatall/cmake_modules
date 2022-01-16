@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(CMattModules
+project(CMateModules
     VERSION 0.0.1
+    DESCRIPTION "A Collection of my own (hopeully) useful cmake modules to make cmake friendlier!"
 )
 enable_testing()
 
