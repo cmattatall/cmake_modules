@@ -86,9 +86,9 @@ PackagerApi_target_install_headers(
 )
 
 
-#packager_configure_deb(foo)
-#packager_configure_deb(bar)
-#packager_finalize_config()
+packager_configure_deb(foo)
+packager_configure_deb(bar)
+packager_finalize_config()
 
 if(COMMAND graphviz_configure)
     graphviz_configure()
