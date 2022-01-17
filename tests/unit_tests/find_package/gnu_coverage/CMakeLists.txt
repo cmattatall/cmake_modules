@@ -27,5 +27,4 @@ project(
 
 
 # FIND PACKAGES 
-find_package(PackagerApi REQUIRED)
-find_package(PackagerDeb REQUIRED)
+find_package(GnuCoverage REQUIRED)
