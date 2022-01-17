@@ -143,11 +143,11 @@ endif() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 # Optional fourth parameter is passed as arguments to _testrunner
 # Pass them in list form, e.g.: "-j;2" for -j 2
 
-macro(coverage_remove_by_pattern pattern)
+macro(GnuCoverage_remove_by_pattern pattern)
     set(LCOV_REMOVE "${LCOV_REMOVE};${pattern}")
-endmacro(coverage_remove_by_pattern pattern)
+endmacro(GnuCoverage_remove_by_pattern pattern)
 
-function(setup_executable_for_coverage _targetname _testrunner _outputname)
+function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _outputname)
 
 	if(NOT LCOV_EXE_PATH)
 		message(FATAL_ERROR "lcov not found! Aborting...")
@@ -217,4 +217,4 @@ function(setup_executable_for_coverage _targetname _testrunner _outputname)
         COMMENT "Performing post-build tasks for target \"${_targetname}\""
         USES_TERMINAL
     )
-endfunction() # setup_executable_for_coverage
+endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _outputname) # setup_executable_for_coverage

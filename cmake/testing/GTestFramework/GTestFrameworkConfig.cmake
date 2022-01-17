@@ -6,30 +6,24 @@ cmake_minimum_required(VERSION 3.21)
 #
 ################################################################################
 #   EXAMPLE USAGE:
-#
-#   # This example assumes that you have this file present 
-#   # in your CMAKE_MODULE_PATH. If you do not, you should insert a call to 
-#   # list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake)
-#   # before any calls to include(...)
-#   # In the above call to list(INSERT), this file would be called 
-#   # "fetch-gtest.cmake" and would be located at
-#   # ${PROJECT_SOURCE_DIR}/cmake/fetch-gtest.cmake
 #   
 #   cmake_minimum_required(VERSION 3.whatever)
-#   project(example_gtest_cmake_module_usage)
-#   include(fetch-gtest.cmake)
+#   project(example_gtest_framework_usage)
+#   find_package(GTestFramework REQUIRED)
+#   GTestFramework_setup()
+#
 #   add_library(lib_to_test)
 #   target_sources(lib_to_test 
 #       PUBLIC 
-#           lib_to_test_sourcefile2.cpp 
-#           lib_to_test_sourcefile2.cpp
+#           src_under_test1.cpp 
+#           src_under_test2.cpp
 #       )
 #   
 #   add_executable(unit_tests)
-#   target_sources(unit_tests PRIVATE unit_test_sourcefile1.cpp)
-#   
-#   include(fetch-gtest)
-#   gtest_discover_tests(unit_tests)
+#   target_sources(unit_tests PRIVATE my_test_main.cpp)
+#   target_link_libraries(unit_tests PRIVATE lib_to_test)
+#
+#   GTestFramework_discover_tests(unit_tests)
 #   
 ################################################################################
 #   
@@ -49,9 +43,9 @@ cmake_minimum_required(VERSION 3.21)
 #
 ################################################################################
 
-function(testing_gtest_setup)
+function(GTestFramework_setup)
 
-    add_library(gtest_framework INTERFACE)
+    add_library(GTestFramework INTERFACE)
 
     message(STATUS "Checking for package \"GTest\" ... ")
     find_package(GTest)
@@ -70,7 +64,7 @@ function(testing_gtest_setup)
         FetchContent_MakeAvailable(googletest)
 
 
-        target_link_libraries(gtest_framework 
+        target_link_libraries(GTestFramework 
             INTERFACE 
                 gtest_main 
                 gtest
@@ -78,17 +72,22 @@ function(testing_gtest_setup)
         )
 
         # Disable linting and static analysis on third-party library sources.
-        set_target_properties(gtest_framework PROPERTIES CXX_CLANG_TIDY "")
+        set_target_properties(GTestFramework PROPERTIES CXX_CLANG_TIDY "")
 
     else()
         message(STATUS "Ok.")
         message(STATUS "") # stdout formatting
 
-        target_link_libraries(gtest_framework 
+        target_link_libraries(GTestFramework 
             INTERFACE 
                 GTest::Main 
                 GTest::GTest
         )
     endif(NOT GTest_FOUND)
-endfunction(testing_gtest_setup)
+endfunction(GTestFramework_setup)
 
+
+
+function(GTestFramework_discover_tests test_runner_executable)
+    gtest_discover_tests(${test_runner_executable} ${ARGN})
+endfunction(GTestFramework_discover_tests test_runner_executable)

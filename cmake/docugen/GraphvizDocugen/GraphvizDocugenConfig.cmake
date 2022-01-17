@@ -3,7 +3,7 @@
 # We will warn if graphviz not supported
 cmake_minimum_required(VERSION 3.10) 
 
-function(graphviz_configure)
+function(GraphvizDocugen_make_target_graph)
     if(${CMAKE_VERSION} VERSION_GREATER "3.21.0")
         set(DOT_EXECUTABLE dot)
         find_program(DOT_EXE_PATH "${DOT_EXECUTABLE}${CMAKE_EXECUTABLE_SUFFIX}")
@@ -24,4 +24,4 @@ function(graphviz_configure)
     else()
         message(WARNING "Cannot create graphviz visualization of software architecture. Not supported in cmake version : ${CMAKE_VERSION}")
     endif()
-endfunction(graphviz_configure)
+endfunction(GraphvizDocugen_make_target_graph)
