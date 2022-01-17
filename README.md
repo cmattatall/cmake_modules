@@ -29,4 +29,4 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
 
 - The output of the cmake configure and cmake build stages are not being printed to stdout as part of the test suites...
 
-- We need to add unit tests for many of the module tests that involve a build stage (not just a configure stage) - this means an implicit DAG for the test runner hierarchy
+- Complete unit tests on module usage
