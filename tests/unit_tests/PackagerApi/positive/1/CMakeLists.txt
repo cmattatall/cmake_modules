@@ -1,25 +1,37 @@
 cmake_minimum_required(VERSION 3.20)
 
 
+if(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
+    message(FATAL_ERROR "SOURCE_CODE_DIR_ABSOLUTE not defined")
+endif(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
+
+if(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
+    message(FATAL_ERROR "HEADER_FILE_DIR_ABSOLUTE not defined") 
+endif(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
+
+if(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
+    message(FATAL_ERROR "TESTS_ROOT_DIR_ABSOLUTE not defined") 
+endif(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
+
+# We will use the directory structure to create a unique name for this test
+file(RELATIVE_PATH TEST_SOURCE_DIR_RELATIVE ${TESTS_ROOT_DIR_ABSOLUTE} ${CMAKE_CURRENT_SOURCE_DIR})
+file(TO_CMAKE_PATH ${TEST_SOURCE_DIR_RELATIVE} TEST_PROJECT_NAME)
+string(REPLACE "/" "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE "\\ " "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE " " "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE "\t" "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
 project(
-    foobar
+    ${TEST_PROJECT_NAME}
     VERSION 0.1.2
     LANGUAGES C CXX
 )
-find_package(GraphvizDocugen REQUIRED)
 find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
 
-if(NOT DEFINED SOURCE_CODE_DIR)
-    message(FATAL_ERROR "SOURCE_CODE_DIR not defined")
-endif(NOT DEFINED SOURCE_CODE_DIR)
 
-if(NOT DEFINED HEADER_FILE_DIR)
-    message(FATAL_ERROR "HEADER_FILE_DIR not defined") 
-endif(NOT DEFINED HEADER_FILE_DIR)
 
-message("SOURCE_CODE_DIR:${SOURCE_CODE_DIR}")
-message("HEADER_FILE_DIR:${HEADER_FILE_DIR}")
+message("SOURCE_CODE_DIR_ABSOLUTE:${SOURCE_CODE_DIR_ABSOLUTE}")
+message("HEADER_FILE_DIR_ABSOLUTE:${HEADER_FILE_DIR_ABSOLUTE}")
 
 
 find_package(PkgConfig REQUIRED)
@@ -37,7 +49,7 @@ PackagerApi_add_library(
 )
 target_sources(foo_target_objects 
     PRIVATE 
-        ${SOURCE_CODE_DIR}/foo.cpp
+        ${SOURCE_CODE_DIR_ABSOLUTE}/foo.cpp
 )
 target_include_directories(foo_target_objects 
     PUBLIC 
@@ -51,7 +63,7 @@ target_link_libraries(foo_target_objects
 PackagerApi_target_install_headers(
     PACKAGE foo
     TARGET foo_target_objects
-    FILES ${HEADER_FILE_DIR}/foo.hpp
+    FILES ${HEADER_FILE_DIR_ABSOLUTE}/foo.hpp
 )
 
 
@@ -84,7 +96,7 @@ PackagerApi_add_library(
 )
 target_sources(bar_target_objects 
     PRIVATE 
-    ${SOURCE_CODE_DIR}/bar.cpp
+    ${SOURCE_CODE_DIR_ABSOLUTE}/bar.cpp
 )
 target_include_directories(bar_target_objects 
     PUBLIC 
@@ -112,13 +124,9 @@ PackagerApi_add_library(
 PackagerApi_target_install_headers(
     PACKAGE bar
     TARGET bar_target_objects
-    FILES ${HEADER_FILE_DIR}/bar.hpp
+    FILES ${HEADER_FILE_DIR_ABSOLUTE}/bar.hpp
 )
 
 
 packager_configure_deb(bar)
 packager_finalize_config()
-
-if(COMMAND graphviz_configure)
-    graphviz_configure()
-endif(COMMAND graphviz_configure)
