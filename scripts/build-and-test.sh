@@ -24,18 +24,24 @@ function main () {
     for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
         set +e
         source_dir=$(dirname ${cmakelists})
-        cmake \
-            -S ${source_dir} \
-            -B ${source_dir}/build \
-            -DCMAKE_PREFIX_PATH="${LOCAL_CMAKE_MODULE_PATH}" \
-            -DSOURCE_CODE_DIR=$(realpath $(pwd)/tests/src) \
-            -DHEADER_FILE_DIR=$(realpath $(pwd)/tests/include)
+        build_dir="${source_dir}/build"
 
-        cmake --build ${source_dir}/build
-        pushd ${source_dir}/build
+        if [ -d "${build_dir}" ]; then 
+            rm -r "${build_dir}"
+        fi
+
+        cmake \
+            -S "${source_dir}" \
+            -B "${build_dir}" \
+            -DCMAKE_PREFIX_PATH="${LOCAL_CMAKE_MODULE_PATH}" \
+            -DSOURCE_CODE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/src) \
+            -DHEADER_FILE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/include) \
+            -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath $(pwd)/tests)
+        cmake --build "${build_dir}"
+        pushd "${build_dir}"
             cpack
         popd
-        rm -r ${source_dir}/build
+        rm -r "${build_dir}"
         set -e
     done
 
