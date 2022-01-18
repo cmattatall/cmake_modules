@@ -49,8 +49,9 @@ function main () {
             -DSOURCE_CODE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/src) \
             -DHEADER_FILE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/include) \
             -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath $(pwd)/tests) \
-            --log-level=debug
+            --no-warn-unused-cli
         cmake --build "${build_dir}"
+
         pushd "${build_dir}"
             cpack
         popd

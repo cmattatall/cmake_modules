@@ -30,7 +30,7 @@ find_package(jsoncpp REQUIRED)
 # FIND PACKAGES 
 find_package(GitMetadata REQUIRED)
 
-add_library(foo ${SOURCE_CODE_DIR_ABSOLUTE}/foo.cpp)
-target_include_directories(foo PUBLIC ${HEADER_FILE_DIR_ABSOLUTE})
+add_library(hello ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp)
+target_include_directories(hello PUBLIC ${HEADER_FILE_DIR_ABSOLUTE})
 
-GitMetadata_target_add_metadata_sources(foo)
+GitMetadata_target_add_metadata_sources(hello)

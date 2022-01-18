@@ -29,11 +29,6 @@ find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
 find_package(GraphvizDocugen REQUIRED)
 
-
-message("SOURCE_CODE_DIR_ABSOLUTE:${SOURCE_CODE_DIR_ABSOLUTE}")
-message("HEADER_FILE_DIR_ABSOLUTE:${HEADER_FILE_DIR_ABSOLUTE}")
-
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 

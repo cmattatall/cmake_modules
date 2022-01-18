@@ -29,10 +29,10 @@ project(
 # FIND PACKAGES 
 find_package(GitMetadata REQUIRED)
 
-add_library(foo ${SOURCE_CODE_DIR_ABSOLUTE}/foo.cpp)
-target_include_directories(foo PUBLIC ${HEADER_FILE_DIR_ABSOLUTE})
+add_library(hello ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp)
+target_include_directories(hello PUBLIC ${HEADER_FILE_DIR_ABSOLUTE})
 
-add_executable(foo_main ${SOURCE_CODE_DIR_ABSOLUTE}/foo_main.cpp)
-target_link_libraries(foo_main PRIVATE foo)
+add_executable(hello_main ${SOURCE_CODE_DIR_ABSOLUTE}/hello_main.cpp)
+target_link_libraries(hello_main PRIVATE hello)
 
-GitMetadata_target_add_metadata_sources(foo_main)
+GitMetadata_target_add_metadata_sources(hello_main)

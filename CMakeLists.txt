@@ -4,7 +4,6 @@ project(CMateModules
     VERSION 0.0.1
     DESCRIPTION "A Collection of my own (hopeully) useful cmake modules to make cmake friendlier!"
 )
-enable_testing()
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 file(GLOB_RECURSE CMAKE_MODULE_CONFIG_FILES 

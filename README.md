@@ -27,6 +27,4 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
 
 - For some reason, TargetUtilsConfigVersion.cmake is being written to the binary directory of all the test suites at test time (when ctest runs and then calls the module unit tests using cmake)
 
-- The output of the cmake configure and cmake build stages are not being printed to stdout as part of the test suites...
-
-- Complete unit tests on module usage
+- Ctest is being invoked for some reason even though the test suite is not being run with ctest anymore... This doesn't cause the builds or tests to fail though. THIS SEEMS TO HAPPEN A TON WHEN `cmake --build` is invoked (but it still seems to happen at least once during the configure stage)
