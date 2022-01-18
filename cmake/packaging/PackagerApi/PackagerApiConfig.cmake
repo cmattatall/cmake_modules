@@ -245,7 +245,7 @@ endmacro(packager_finalize_config)
 # Usage:
 # PackagerApi_add( 
 #   PACKAGE my_package    
-#   [VERSION 0.9.1 ] 
+#   VERSION 0.9.1 
 # )
 function(PackagerApi_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
@@ -374,7 +374,7 @@ function(PackagerApi_add_package)
         message(DEBUG "Adding package: ${_PACKAGE} to package list.")
         PackagerApi_add_to_list(${_PACKAGE})
     endif(PACKAGE_EXISTS)
-
+    
     util_is_version_valid(${_VERSION} VALID_VERSION)
     if(NOT VALID_VERSION)
         message(VERBOSE "[in ${CMAKE_CURRENT_FUNCTION}] Argument VERSION does not match regex ${VALID_VERSION_REGEX}.")
