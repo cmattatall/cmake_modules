@@ -89,5 +89,6 @@ endfunction(GTestFramework_setup)
 
 
 function(GTestFramework_discover_tests test_runner_executable)
+    target_link_libraries(${test_runner_executable} PRIVATE GTestFramework)
     gtest_discover_tests(${test_runner_executable} ${ARGN})
 endfunction(GTestFramework_discover_tests test_runner_executable)

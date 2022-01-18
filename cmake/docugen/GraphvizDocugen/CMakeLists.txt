@@ -24,9 +24,3 @@ install(
     COMPONENT ${CMAKE_PROJECT_NAME}
     DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${MODULE_NAME}/"
 )
-
-
-# We can make this module test itself.
-if(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-    add_subdirectory(tests)
-endif(NOT (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
