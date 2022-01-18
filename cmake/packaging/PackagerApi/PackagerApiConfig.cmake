@@ -455,7 +455,7 @@ endfunction(PackagerApi_add_package)
 # PackagerApi_add_library(
 #    PACKAGE package 
 #    TARGET target_name 
-#    TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
+#    TARGET_TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
 # )
 function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
