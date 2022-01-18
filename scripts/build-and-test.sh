@@ -1,6 +1,18 @@
 #!/bin/bash
 # Bash script to configure and test the project
+set +e
+
+# we use libjsoncpp as a an example transient dependency 
+#(just printing a hello-world json) in some of the tests
+dpkg --list | grep libjsoncpp-dev
+if [ "$?" -ne "0" ]; then
+    echo "libjsoncpp is not installed. It is required for the transient dependency tests."
+    echo -e "Please install it with \$sudo apt-get update && sudo apt-get install -y libjsoncpp-dev"
+    exit 0
+fi
+
 set -e
+
 
 WORKDIR=$(pwd)
 THIS_SCRIPT=$0
@@ -36,7 +48,8 @@ function main () {
             -DCMAKE_PREFIX_PATH="${LOCAL_CMAKE_MODULE_PATH}" \
             -DSOURCE_CODE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/src) \
             -DHEADER_FILE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/include) \
-            -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath $(pwd)/tests)
+            -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath $(pwd)/tests) \
+            --log-level=debug
         cmake --build "${build_dir}"
         pushd "${build_dir}"
             cpack

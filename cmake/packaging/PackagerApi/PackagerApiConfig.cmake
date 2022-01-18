@@ -616,12 +616,25 @@ function(PackagerApi_add_library)
                 get_target_property(OBJECT_TARGET_TYPE ${OBJECT_TARGET_NAME} TYPE)
                 if(OBJECT_TARGET_TYPE)
                     if(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
+
+                        # PASS interface link libraries and interface include directories on from $<TARGET_OBJECTS: ... >
+
                         get_target_property(INHERITED_INTERFACE_INCLUDE_DIRECTORIES ${OBJECT_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+                        message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
+                        if(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
+                            target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
+                        else()
+                            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_INCLUDE_DIRECTORIES")
+                        endif(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
+
                         get_target_property(INHERITED_INTERFACE_LINK_LIBRARIES ${OBJECT_TARGET_NAME} INTERFACE_LINK_LIBRARIES)
-                        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
-                        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
-                        target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
-                        target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                        message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
+                        if(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
+                            target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                        else()
+                            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_LINK_LIBRARIES")
+                        endif(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
+
                     else()
                         message(WARNING "Target:${OBJECT_TARGET_NAME} exists but does not have type:OBJECT_LIBRARY. There is a likely bug around in ${CMAKE_CURRENT_LIST_LINE} in ${CMAKE_CURRENT_LIST_FILE}.")
                     endif(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
@@ -659,6 +672,8 @@ function(PackagerApi_add_library)
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
         message(VERBOSE "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
+        #set_target_properties(${_TARGET} PROPERTIES INHERITED_INTERFACE_INCLUDE_DIRECTORIES "")
+        #set_target_properties(${_TARGET} PROPERTIES INHERITED_INTERFACE_LINK_LIBRARIES "")
     else()
 
         # After the target is installed, if another project or target imports it

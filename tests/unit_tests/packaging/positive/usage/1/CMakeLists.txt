@@ -29,104 +29,47 @@ find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
 
 
-
 message("SOURCE_CODE_DIR_ABSOLUTE:${SOURCE_CODE_DIR_ABSOLUTE}")
 message("HEADER_FILE_DIR_ABSOLUTE:${HEADER_FILE_DIR_ABSOLUTE}")
 
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
 PackagerApi_add_package(
-    PACKAGE foo
+    PACKAGE hello
     VERSION 2.0.1    
 )
 
 PackagerApi_add_library(
-    TARGET foo_target_objects
-    PACKAGE foo
+    TARGET hello_target_objects
+    PACKAGE hello
     TARGET_TYPE OBJECT
 )
-target_sources(foo_target_objects 
+target_sources(hello_target_objects 
     PRIVATE 
-        ${SOURCE_CODE_DIR_ABSOLUTE}/foo.cpp
-)
-target_include_directories(foo_target_objects 
-    PUBLIC 
-        ${JSONCPP_INCLUDE_DIRS}
-)
-target_link_libraries(foo_target_objects 
-    PUBLIC 
-        ${JSONCPP_LIBRARIES}
+        ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp
 )
 
 PackagerApi_target_install_headers(
-    PACKAGE foo
-    TARGET foo_target_objects
-    FILES ${HEADER_FILE_DIR_ABSOLUTE}/foo.hpp
+    PACKAGE hello
+    TARGET hello_target_objects
+    FILES ${HEADER_FILE_DIR_ABSOLUTE}/hello.hpp
 )
 
 
 PackagerApi_add_library(
-    TARGET foo_target_shared 
-    PACKAGE foo
+    TARGET hello_target_shared 
+    PACKAGE hello
     TARGET_TYPE SHARED
-    $<TARGET_OBJECTS:foo_target_objects>
+    $<TARGET_OBJECTS:hello_target_objects>
 )
 
 PackagerApi_add_library(
-    TARGET foo_target_static
-    PACKAGE foo
+    TARGET hello_target_static
+    PACKAGE hello
     TARGET_TYPE STATIC
-    $<TARGET_OBJECTS:foo_target_objects>
+    $<TARGET_OBJECTS:hello_target_objects>
 )
-packager_configure_deb(foo)
+packager_configure_deb(hello)
 
-
-
-
-PackagerApi_add_package(
-    PACKAGE bar 
-    VERSION 9.9.9
-)
-PackagerApi_add_library(
-    TARGET bar_target_objects
-    PACKAGE bar
-    TARGET_TYPE OBJECT
-)
-target_sources(bar_target_objects 
-    PRIVATE 
-    ${SOURCE_CODE_DIR_ABSOLUTE}/bar.cpp
-)
-target_include_directories(bar_target_objects 
-    PUBLIC 
-    ${JSONCPP_INCLUDE_DIRS}
-)
-target_link_libraries(bar_target_objects 
-    PUBLIC 
-    ${JSONCPP_LIBRARIES}
-)
-
-
-PackagerApi_add_library(
-    TARGET bar_target_shared 
-    PACKAGE bar
-    TARGET_TYPE SHARED
-    $<TARGET_OBJECTS:bar_target_objects>
-)
-PackagerApi_add_library(
-    TARGET bar_target_static 
-    PACKAGE bar
-    TARGET_TYPE STATIC
-    $<TARGET_OBJECTS:bar_target_objects>
-)
-
-PackagerApi_target_install_headers(
-    PACKAGE bar
-    TARGET bar_target_objects
-    FILES ${HEADER_FILE_DIR_ABSOLUTE}/bar.hpp
-)
-
-
-packager_configure_deb(bar)
 packager_finalize_config()
