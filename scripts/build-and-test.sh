@@ -39,7 +39,7 @@ function main () {
         build_dir="${source_dir}/build"
 
         if [ -d "${build_dir}" ]; then 
-            rm -r "${build_dir}"
+            rm -rf "${build_dir}"
         fi
 
         cmake \
@@ -54,7 +54,7 @@ function main () {
         pushd "${build_dir}"
             cpack
         popd
-        rm -r "${build_dir}"
+        rm -rf "${build_dir}"
         set -e
     done
 
