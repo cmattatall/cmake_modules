@@ -90,5 +90,24 @@ endfunction(GTestFramework_setup)
 
 function(GTestFramework_discover_tests test_runner_executable)
     target_link_libraries(${test_runner_executable} PRIVATE GTestFramework)
-    gtest_discover_tests(${test_runner_executable} ${ARGN})
+    #gtest_discover_tests(${test_runner_executable} ${ARGN})
+
+    get_target_property(TEST_SOURCES ${test_runner_executable} SOURCES)
+    message(WARNING "TEST_SOURCES:${TEST_SOURCES}")
+    if(NOT (TEST_SOURCES STREQUAL "TEST_SOURCES-NOTFOUND"))
+        gtest_add_tests(
+            TARGET ${test_runner_executable}
+            SOURCES ${TEST_SOURCES}
+        )
+    endif(NOT (TEST_SOURCES STREQUAL "TEST_SOURCES-NOTFOUND"))
+
+    get_target_property(INTERFACE_TEST_SOURCES ${test_runner_executable} INTERFACE_SOURCES)
+    message(WARNING "TEST_SOURCES:${TEST_SOURCES}")
+    if(NOT (INTERFACE_TEST_SOURCES STREQUAL "INTERFACE_TEST_SOURCES-NOTFOUND"))
+        gtest_add_tests(
+            TARGET ${test_runner_executable}
+            SOURCES ${INTERFACE_TEST_SOURCES}
+        )
+    endif(NOT (INTERFACE_TEST_SOURCES STREQUAL "INTERFACE_TEST_SOURCES-NOTFOUND"))
+
 endfunction(GTestFramework_discover_tests test_runner_executable)
