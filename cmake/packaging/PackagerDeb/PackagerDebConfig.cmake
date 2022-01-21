@@ -83,8 +83,6 @@ function(PackagerDeb_configure PKG)
         "# ${PKG} default configuration\n${PKG_INSTALL_LIBDIR_ABSOLUTE}\n"
     )
 
-    message(WARNING "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
-    message(WARNING "PKG_LDCONFIG_INSTALL_DIR:${PKG_LDCONFIG_INSTALL_DIR}")
     install(
         FILES "${PKG_LDCONFIG_FILE}"
         DESTINATION ${PKG_LDCONFIG_INSTALL_DIR}
