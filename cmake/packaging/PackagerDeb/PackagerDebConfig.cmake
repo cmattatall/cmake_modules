@@ -44,7 +44,7 @@ else()
 endif(NOT CMAKE_CROSSCOMPILING)
 
 
-function(packager_configure_deb PKG)
+function(PackagerDeb_configure PKG)
     string(TOUPPER ${PKG} PKG_UPPER)
     PackagerApi_get_version(${PKG} PKG_VER)
     set(PKG_ARCH ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
@@ -88,7 +88,7 @@ function(packager_configure_deb PKG)
         COMPONENT ${PKG_POSTINST_COMPONENT_NAME}
     )
 
-endfunction(packager_configure_deb PKG)
+endfunction(PackagerDeb_configure PKG)
 
 
 
