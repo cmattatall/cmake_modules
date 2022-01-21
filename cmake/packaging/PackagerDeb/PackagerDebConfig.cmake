@@ -61,7 +61,7 @@ function(PackagerDeb_configure PKG)
     set(CPACK_DEBIAN_${PKG_UPPER}_FILE_NAME "${PKG_NAME}_${PKG_VER}_${PKG_ARCH}.deb" CACHE INTERNAL "")
     set(CPACK_DEBIAN_${PKG_UPPER}_PACKAGE_SHLIBDEPS ON CACHE INTERNAL "")
 
-    PackagerApi_get_ldconfig_file_path(${PKG} PKG_INSTALLED_LDCONFIG_FILE)
+    PackagerApi_get_ldconfig_file_path(${PKG} PKG_LDCONFIG_FILE)
     PackagerApi_get_library_files_install_reldir(${PKG} PKG_INSTALL_LIBDIR_RELATIVE)
     PackagerApi_get_postinst_component_name(${PKG} PKG_POSTINST_COMPONENT_NAME)
     PackagerApi_get_ldconfig_install_absdir(${PKG} PKG_LDCONFIG_INSTALL_DIR)
@@ -78,19 +78,16 @@ function(PackagerDeb_configure PKG)
     message(DEBUG "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE} (${CMAKE_CURRENT_FUNCTION}:${CMAKE_CURRENT_LIST_LINE})")
     message(DEBUG "PKG_LDCONFIG_INSTALL_DIR:${PKG_LDCONFIG_INSTALL_DIR} (${CMAKE_CURRENT_FUNCTION}:${CMAKE_CURRENT_LIST_LINE})")
 
-    set(PKG_LDCONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/${PKG}.conf)
     file(
         WRITE ${PKG_LDCONFIG_FILE}
         "# ${PKG} default configuration\n${PKG_INSTALL_LIBDIR_ABSOLUTE}\n"
     )
 
-    message("PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
-
-    get_filename_component(PKG_LDCONFIG_INSTALL_DIR ${PKG_INSTALLED_LDCONFIG_FILE} DIRECTORY)
+    message(WARNING "PKG_LDCONFIG_FILE:${PKG_LDCONFIG_FILE}")
     message(WARNING "PKG_LDCONFIG_INSTALL_DIR:${PKG_LDCONFIG_INSTALL_DIR}")
     install(
         FILES "${PKG_LDCONFIG_FILE}"
-        DESTINATION "${PKG_LDCONFIG_INSTALL_DIR}"
+        DESTINATION ${PKG_LDCONFIG_INSTALL_DIR}
         PERMISSIONS
             OWNER_WRITE OWNER_READ
             GROUP_READ
