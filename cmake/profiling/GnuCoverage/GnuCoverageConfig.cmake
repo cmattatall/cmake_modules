@@ -152,7 +152,7 @@ endmacro(GnuCoverage_remove_by_pattern pattern)
 
 function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _outputname)
 
-    target_link_libraries(${target_name} PRIVATE gcov)
+    target_link_libraries(${_target_name} PRIVATE gcov)
 
 	if(NOT LCOV_EXE_PATH)
 		message(FATAL_ERROR "lcov not found! Aborting...")
