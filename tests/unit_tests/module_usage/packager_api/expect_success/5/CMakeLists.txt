@@ -47,5 +47,5 @@ PackagerApi_add_library(
     PACKAGE ${PROJECT_NAME}  
     TARGET lib_with_direct_sources_type_interface
     TARGET_TYPE INTERFACE
-    ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp # We expect this to fail because INTERFACE libraries cannot have sources
+    ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp 
 )
