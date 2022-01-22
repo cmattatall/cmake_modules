@@ -11,19 +11,30 @@ macro(Packager_init)
     set(CPACK_STRIP_FILES ON CACHE INTERNAL "")
     set(CPACK_SET_DESTDIR OFF CACHE INTERNAL "")
 
-    set(CPACK_PACKAGE_NAME ${PROJECT_NAME} CACHE INTERNAL "")
+    if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+        set(CPACK_PACKAGE_NAME ${PROJECT_NAME} CACHE INTERNAL "")
+        set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+        set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+        set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    endif(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    
     set(CPACK_PACKAGE_VENDOR "Carl Mattatall" CACHE INTERNAL "")
     set(CPACK_PACKAGE_CONTACT "cmattatall2@gmail.com" CACHE INTERNAL "")
     set(CPACK_VERBATIM_VARIABLES YES CACHE INTERNAL "")
 
-    set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-    set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-    set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    if(UNIX)
+        if(NOT APPLE)
+            set(CPACK_PACKAGING_INSTALL_PREFIX "/usr" CACHE INTERNAL "") 
+        endif()
+    else()
+        message(WARNING "Cannot set CPACK_PACKAGING_INSTALL_PREFIX. ${CMAKE_CURRENT_LIST_FILE} does not currently have support for ${CMAKE_HOST_SYSTEM_NAME}")
+    endif()
 
-    set(CPACK_PACKAGING_INSTALL_PREFIX "/usr" CACHE INTERNAL "") # Sorry windows folks
     set(CPACK_OUTPUT_FILE_PREFIX "${CMAKE_BINARY_DIR}/packages" CACHE INTERNAL "")
 
-    set(CPACK_GENERATOR "") # Empty list, user will specific with functions which generators they want
+    # Empty list.
+    # Caller will use other PackagerX functions e.g. PackagerDeb to populate.
+    set(CPACK_GENERATOR "") 
 
 endmacro(Packager_init)
 
