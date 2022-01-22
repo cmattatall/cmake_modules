@@ -24,5 +24,5 @@ GTestFramework_setup()
 
 
 add_executable(test-test)
-target_sources(test-test PRIVATE src/test1.cpp)
+target_sources(test-test PRIVATE src/test.cpp)
 GTestFramework_discover_tests(test-test)

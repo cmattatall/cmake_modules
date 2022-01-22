@@ -19,14 +19,10 @@ project(
 
 
 # FIND PACKAGES 
-find_package(PackagerDeb REQUIRED)
+find_package(GTestFramework REQUIRED)
+GTestFramework_setup()
 
-#[[
-if(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
-    message(FATAL_ERROR "SOURCE_CODE_DIR_ABSOLUTE not defined")
-endif(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
 
-if(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
-    message(FATAL_ERROR "HEADER_FILE_DIR_ABSOLUTE not defined") 
-endif(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
-#]]
+add_executable(test-test)
+target_sources(test-test PRIVATE src/test.cpp)
+GTestFramework_discover_tests(test-test)
