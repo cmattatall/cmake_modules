@@ -23,6 +23,9 @@ include(packaging/PackagerDeb/PackagerDebConfig)
 
 add_subdirectory(cmake)
 
-set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
-set(CPACK_GENERATOR DEB)
-include(CPack)
+
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
+    set(CPACK_GENERATOR DEB)
+    include(CPack)
+endif(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
