@@ -22,6 +22,19 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
 ```
 
 
+# Usage
+
+- See the `tests/unit_tests/module_usage` subdirectories for API usage examples. <br>
+- There should also be cmake function API documentation in many of the cmake modules e.g.: <br>
+```sh
+# Usage:
+# PackagerApi_add_library(
+#    PACKAGE package 
+#    TARGET target_name 
+#    TARGET_TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
+# )
+```
+
 # TODO LIST
 
 
