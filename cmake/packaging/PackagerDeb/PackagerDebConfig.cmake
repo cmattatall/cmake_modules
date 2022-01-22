@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.21)
 # Brief: Initializes the PackagerDeb API in CMAKE_CURRENT_SCOPE
 #
 # Note: Call this before any other PackagerDeb functions
-macro(PackagerDeb_setup)
+macro(PackagerDeb_init)
     find_package(Packager REQUIRED)
 
     list(APPEND CPACK_GENERATOR "DEB")
@@ -48,7 +48,7 @@ macro(PackagerDeb_setup)
         message(FATAL_ERROR "TODO: Add CPACK_DEBIAN_FILE_NAME configuration for cross-compiled projects")
     endif(NOT CMAKE_CROSSCOMPILING)
 
-endmacro(PackagerDeb_setup)
+endmacro(PackagerDeb_init)
 
 
 # Brief: Configure PKG for debian packaging

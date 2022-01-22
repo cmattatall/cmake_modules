@@ -33,7 +33,7 @@ pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
 find_package(PackagerApi REQUIRED)
 find_package(PackagerDeb REQUIRED)
-PackagerDeb_setup()
+PackagerDeb_init()
 
 PackagerApi_add_package(
     PACKAGE ${PROJECT_NAME}

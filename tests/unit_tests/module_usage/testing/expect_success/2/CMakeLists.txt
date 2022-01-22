@@ -20,7 +20,7 @@ project(
 
 # FIND PACKAGES 
 find_package(GTestFramework REQUIRED)
-GTestFramework_setup()
+GTestFramework_init()
 
 
 add_executable(test-test)

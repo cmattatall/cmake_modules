@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.21)
 #   cmake_minimum_required(VERSION 3.whatever)
 #   project(example_gtest_framework_usage)
 #   find_package(GTestFramework REQUIRED)
-#   GTestFramework_setup()
+#   GTestFramework_init()
 #
 #   add_library(lib_to_test)
 #   target_sources(lib_to_test 
@@ -43,7 +43,7 @@ cmake_minimum_required(VERSION 3.21)
 #
 ################################################################################
 
-function(GTestFramework_setup)
+function(GTestFramework_init)
 
     add_library(GTestFramework INTERFACE)
 
@@ -84,7 +84,7 @@ function(GTestFramework_setup)
                 GTest::GTest
         )
     endif(NOT GTest_FOUND)
-endfunction(GTestFramework_setup)
+endfunction(GTestFramework_init)
 
 
 

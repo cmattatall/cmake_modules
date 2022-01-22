@@ -67,7 +67,7 @@
 #
 #
 
-macro(GnuCoverage_setup)
+macro(GnuCoverage_init)
     
     # Check prereqs
     find_program( GCOV_EXE_PATH    gcov)
@@ -134,7 +134,7 @@ macro(GnuCoverage_setup)
     if ( NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
     message( WARNING "Code coverage results with an optimized (non-Debug) build may be misleading" )
     endif() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
-endmacro(GnuCoverage_setup)
+endmacro(GnuCoverage_init)
 
 
 # Param _targetname     The name of new the custom make target
