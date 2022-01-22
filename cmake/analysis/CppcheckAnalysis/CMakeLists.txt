@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
 get_filename_component(MODULE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-project(${MODULE_NAME}
-    VERSION 0.0.1
-    LANGUAGES NONE
-)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -21,7 +17,7 @@ install(
     FILES 
         ${MODULE_CONFIG_FILE}
         ${MODULE_VERSION_FILE}
-    COMPONENT ${CMAKE_PROJECT_NAME}
+    COMPONENT ${PROJECT_NAME}
     DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${MODULE_NAME}/"
 )
 
