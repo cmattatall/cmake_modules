@@ -25,6 +25,8 @@ add_subdirectory(cmake)
 
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    Packager_config_metadata()
+    message(WARNING "CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR is TRUEEE")
     set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
     set(CPACK_GENERATOR DEB)
     include(CPack)
