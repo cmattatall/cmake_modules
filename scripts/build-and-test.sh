@@ -1,9 +1,14 @@
 #!/bin/bash
 # Bash script to configure and test the project
-set +e
+ABORT_ON_FAILURE="ON" # change this to continue running even when a test fails
+
+WORKDIR=$(pwd)
+THIS_SCRIPT=$0
+[ ! -d "${WORKDIR}/.git" ] && echo "$THIS_SCRIPT invoked from wrong working directory: $WORKDIR. Please invoke from the project root." && exit -1
 
 # we use libjsoncpp as a an example transient dependency 
 #(just printing a hello-world json) in some of the tests
+set +e
 dpkg --list | grep libjsoncpp-dev
 if [ "$?" -ne "0" ]; then
     echo "libjsoncpp is not installed. It is required for the transient dependency tests."
@@ -13,51 +18,137 @@ fi
 
 set -e
 
+FAILED_POSITIVE_TESTS=()
+FAILED_NEGATIVE_TESTS=()
+FAILURE_COUNT=0
 
-WORKDIR=$(pwd)
-THIS_SCRIPT=$0
+function run_test () {
+    local TEST_CMAKE_SOURCE_DIR=${1:?"Error, no argument provided for TEST_CMAKE_SOURCE_DIR"}
+    local TEST_CMAKE_BUILD_DIR=${2:?"Error, no argument provided for TEST_CMAKE_BUILD_DIR"}
+    local TEST_LOGS_DIR=${3:?"Error, no argument provided for TEST_LOGS_DIR"}
+    local EXPECT_RETURN_CODE=${4:?"Error, no argument provided for EXPECT_RETURN_CODE"} # if we pass ANY argument to this we should treat it as a negative test
 
-if [ ! -f README.md ]; then
-    echo "$THIS_SCRIPT invoked from wrong working directory: $WORKDIR. Please invoke from the project root."
-    exit -1
-fi
+    [ -d "${TEST_CMAKE_BUILD_DIR}" ] && rm -r "${TEST_CMAKE_BUILD_DIR}"
+    local TEST_NAME=$(echo $(realpath ${TESTCASE_CMAKE_SOURCE_DIR} --relative-to=${WORKDIR}/tests) | sed 's/\//_/g')
+    local TEST_LOGFILE="${TEST_LOGS_DIR}/${TEST_NAME}.log"
+    [ -f "${TEST_LOGFILE}" ] && rm "${TEST_LOGFILE}"
+    touch "${TEST_LOGFILE}"
+
+    echo "" # formatting
+    echo "Running test: ${TEST_NAME}"
+    echo "Using TEST_CMAKE_SOURCE_DIR: ${TEST_CMAKE_SOURCE_DIR}"
+    echo "Using TEST_CMAKE_BUILD_DIR: ${TEST_CMAKE_BUILD_DIR}"
+    echo "Using TEST_LOGS_DIR: ${TEST_LOGS_DIR}"
+    echo "Using EXPECT_RETURN_CODE:${EXPECT_RETURN_CODE}"
+    echo "" # formatting
+
+    set -o pipefail # If you don't do this, tee will "succeed" despite the command being piped to it failing
+    cmake \
+        -S "${TESTCASE_CMAKE_SOURCE_DIR}" \
+        -B "${TESTCASE_CMAKE_BUILD_DIR}" \
+        -DCMAKE_PREFIX_PATH="${TEST_SUITE_PROJECT_CMAKE_MODULE_PATH}" \
+        -DSOURCE_CODE_DIR_ABSOLUTE=$(realpath ${WORKDIR}/tests/src) \
+        -DHEADER_FILE_DIR_ABSOLUTE=$(realpath ${WORKDIR}/tests/include) \
+        -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath ${WORKDIR}/tests) \
+        --no-warn-unused-cli \
+        | tee --append "${TEST_LOGFILE}" \
+    && \
+    cmake \
+        --build "${TESTCASE_CMAKE_BUILD_DIR}" \
+        | tee --append "${TEST_LOGFILE}"
+    local TEST_RESULT="$?"
+    set +o pipefail
+
+    if [ "${EXPECT_RETURN_CODE}" == "0" ]; then
+        # Positive test should return 0
+        if [ "$TEST_RESULT" != "0" ]; then 
+            echo "Test: ${TEST_NAME} failed. Expected a 0 return code, but got ${TEST_RESULT}. See "${TEST_LOGFILE}" for details."
+            FAILED_POSITIVE_TESTS[${#FAILED_POSITIVE_TESTS[@]}]="${TEST_NAME}"
+            ((FAILURE_COUNT=FAILURE_COUNT+1))
+            if [ "$ABORT_ON_FAILURE" == "ON" ]; then
+                exit -1
+            fi
+        fi
+    else 
+        # Negative test should return ANYTHING but 0
+        if [ "$TEST_RESULT" == "0" ]; then
+            echo "Test: ${TEST_NAME} failed. Expected a NON-zero return code, but got ${TEST_RESULT}. See "${TEST_LOGFILE}" for details."
+            FAILED_NEGATIVE_TESTS[${#FAILED_NEGATIVE_TESTS[@]}]="${TEST_NAME}"
+            ((FAILURE_COUNT=FAILURE_COUNT+1))
+            if [ "$ABORT_ON_FAILURE" == "ON" ]; then
+                exit -1
+            fi
+        fi
+    fi            
+
+    # If we get this far, the test has succeeded so we don't need the logs
+    rm "${TEST_LOGGING_DIR}/${TEST_NAME}.log"
+    [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
+}
+
+
+
+function run_tests () {
+
+    local TEST_SUITE_PROJECT_CMAKE_MODULE_PATH=${1:?"Error: no argument provided for TEST_SUITE_PROJECT_CMAKE_MODULE_PATH"}
+    echo "Using TEST_SUITE_PROJECT_CMAKE_MODULE_PATH: ${TEST_SUITE_PROJECT_CMAKE_MODULE_PATH}"
+
+    local TEST_LOGGING_DIR="${WORKDIR}/tests/unit_tests/logs"
+    [ ! -d "${TEST_LOGGING_DIR}" ] && mkdir -p "${TEST_LOGGING_DIR}"
+
+    set +e
+    for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
+        local TESTCASE_CMAKE_SOURCE_DIR=$(dirname ${cmakelists})
+        local TESTCASE_CMAKE_BUILD_DIR="${TESTCASE_CMAKE_SOURCE_DIR}/build"
+
+        local TEST_TYPE=$(echo $(basename $(dirname ${TESTCASE_CMAKE_SOURCE_DIR})) | sed 's/\//_/')
+        echo "TEST_TYPE:${TEST_TYPE}"
+
+        if [ "${TEST_TYPE}" == "expect_success" ]; then
+            run_test \
+                "${TESTCASE_CMAKE_SOURCE_DIR}"  \
+                "${TESTCASE_CMAKE_BUILD_DIR}"   \
+                "${TEST_LOGGING_DIR}"           \
+                0   
+
+        elif [ "${TEST_TYPE}" == "expect_failure" ]; then
+            run_test \
+                "${TESTCASE_CMAKE_SOURCE_DIR}"  \
+                "${TESTCASE_CMAKE_BUILD_DIR}"   \
+                "${TEST_LOGGING_DIR}"           \
+                -1
+        else
+            echo "Could not determine test type. Grandparent directory of ${cmakelists} must be \"expect_failure\" or \"expect_success\"."
+        fi
+    done
+    set -e
+
+    if [ ${FAILURE_COUNT} -gt 0 ]; then
+        echo "The following tests failed:"
+        for FAILED_POSITIVE_TEST in ${FAILED_POSITIVE_TEST[@]}; do
+            echo " - ${FAILED_POSITIVE_TEST} (expected success, got failure)"
+        done
+        for FAILED_NEGATIVE_TEST in ${FAILED_NEGATIVE_TEST[@]}; do
+            echo " - ${FAILED_NEGATIVE_TEST} (expected failure, got success)"
+        done
+        exit $FAILURE_COUNT
+    else
+        echo "All tests succeeded!"
+    fi
+}
 
 function main () {
     cmake -S . -B build
     cmake --build build
 
-    LOCAL_CMAKE_MODULE_PATH=""
+    local LOCAL_CMAKE_MODULE_PATH=""
     for cmake_module_configfile in $(find cmake -name "*Config\.cmake"); do
         cmake_module_dir=$(dirname ${cmake_module_configfile})
         cmake_module_dir_abs=$(realpath ${cmake_module_dir})
         LOCAL_CMAKE_MODULE_PATH="${LOCAL_CMAKE_MODULE_PATH};${cmake_module_dir_abs};"
     done
 
-    for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
-        set +e
-        source_dir=$(dirname ${cmakelists})
-        build_dir="${source_dir}/build"
-
-        if [ -d "${build_dir}" ]; then 
-            rm -rf "${build_dir}"
-        fi
-
-        cmake \
-            -S "${source_dir}" \
-            -B "${build_dir}" \
-            -DCMAKE_PREFIX_PATH="${LOCAL_CMAKE_MODULE_PATH}" \
-            -DSOURCE_CODE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/src) \
-            -DHEADER_FILE_DIR_ABSOLUTE=$(realpath $(pwd)/tests/include) \
-            -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath $(pwd)/tests) \
-            --no-warn-unused-cli
-        cmake --build "${build_dir}"
-
-        pushd "${build_dir}"
-            cpack
-        popd
-        rm -rf "${build_dir}"
-        set -e
-    done
+    run_tests "${LOCAL_CMAKE_MODULE_PATH}"
 
     pushd build
         cpack

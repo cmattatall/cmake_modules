@@ -122,12 +122,6 @@ function(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_names
 endfunction(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_namespace)
 
 
-function(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
-    PackagerApi_check_exists(${PACKAGE})
-    set(${OUT_cmake_files_install_reldir} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
-endfunction(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
-
-
 function(PackagerApi_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
     PackagerApi_check_exists(${PACKAGE})
     set(${OUT_library_files_install_reldir} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
@@ -140,16 +134,28 @@ function(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_in
 endfunction(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
 
 
-function(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
+function(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
     PackagerApi_check_exists(${PACKAGE})
-    set(${OUT_header_component_name} "${PACKAGE}Dev" PARENT_SCOPE)
-endfunction(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
+    set(${OUT_cmake_files_install_reldir} "${CMAKE_INSTALL_LIBDIR}/cmake/${PACKAGE}/" PARENT_SCOPE)
+endfunction(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
+
+
+function(PackagerApi_get_executable_files_install_reldir PACKAGE OUT_executable_files_install_reldir)
+    PackagerApi_check_exists(${PACKAGE})
+    set(${OUT_executable_files_install_reldir} ${CMAKE_INSTALL_BINDIR}/${PACKAGE} PARENT_SCOPE)
+endfunction(PackagerApi_get_executable_files_install_reldir PACKAGE OUT_executable_files_install_reldir)
 
 
 function(PackagerApi_get_library_component_name PACKAGE OUT_library_component_name)
     PackagerApi_check_exists(${PACKAGE})
     set(${OUT_library_component_name} "${PACKAGE}Lib" PARENT_SCOPE)
 endfunction(PackagerApi_get_library_component_name PACKAGE OUT_library_component_name)
+
+
+function(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
+    PackagerApi_check_exists(${PACKAGE})
+    set(${OUT_header_component_name} "${PACKAGE}Dev" PARENT_SCOPE)
+endfunction(PackagerApi_get_header_component_name PACKAGE OUT_header_component_name)
 
 
 function(PackagerApi_get_cmake_component_name PACKAGE OUT_cmake_component_name)
@@ -672,8 +678,6 @@ function(PackagerApi_add_library)
     # Don't install object or interface libraries
     if((_TARGET_TYPE STREQUAL OBJECT) OR (_TARGET_TYPE STREQUAL INTERFACE))
         message(VERBOSE "Target: \"${_TARGET}\" is type: \"${_TARGET_TYPE}\" and so will not be installed.")
-        #set_target_properties(${_TARGET} PROPERTIES INHERITED_INTERFACE_INCLUDE_DIRECTORIES "")
-        #set_target_properties(${_TARGET} PROPERTIES INHERITED_INTERFACE_LINK_LIBRARIES "")
     else()
 
         # After the target is installed, if another project or target imports it
@@ -701,6 +705,228 @@ function(PackagerApi_add_library)
     endif()
     
 endfunction(PackagerApi_add_library)
+
+
+# Usage:
+# PackagerApi_add_executable(
+#    PACKAGE package 
+#    TARGET target_name 
+# )
+function(PackagerApi_add_executable)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+
+    set(OPTION_ARGS
+        # ADD YOUR OPTIONAL ARGUMENTS
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        PACKAGE
+        TARGET
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+    
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # Note: Default values are not supported for members of OPTION_ARGS 
+    # (since not providing an option is FALSE)
+    #
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _KEYWORDS_MISSING_VALUES=${_KEYWORDS_MISSING_VALUES}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _UNPARSED_ARGUMENTS=${_UNPARSED_ARGUMENTS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+
+    if(TARGET ${_TARGET})
+        message(FATAL_ERROR "Target: \"${_TARGET}\" already exists.")
+    endif(TARGET ${_TARGET})
+
+                                        
+    add_executable(
+        ${_TARGET} 
+        ${_UNPARSED_ARGUMENTS} 
+        # PROPAGATE OTHER ARGS TO add_library call
+        # e.g. 
+        #    - $<TARGET_OBJECTS:SOME_OTHER_TARGET>
+        #    - source1.cpp source2.cpp,
+        #    - EXCLUDE_FROM_ALL               
+    )
+
+    # Inherit link libraries and include directories from target objects.
+    # This because we do not install target objects and so without doing this
+    # transient dependencies will not be propagated into the install package.
+    foreach(arg ${_UNPARSED_ARGUMENTS})
+
+        # The behaviour of string(REGEX <mode>) is INCREDIBLY undocumented.
+        # Sometimes it is even plain wrong.
+        # string(REGEX MATCH) stores captured subexpressions in CMAKE_MATCH_1 ... CMAKE_MATCH_9
+        # (where CMAKE_MATCH_0 == the complete matched expression - not subexpression).
+        #
+        # However, Despite the claims of the documentation, CMAKE_MATCH_x (where x > 1)
+        # is not set for string(REGEX REPLACE) ... which is sad because there is a large
+        # usecase subset where one would want to parse a subexpression from within a string.
+        set(TARGET_OBJECTS_REGEX "\\$<TARGET_OBJECTS:(.+)>")
+        string(REGEX MATCH ${TARGET_OBJECTS_REGEX} MATCHED ${arg})
+        if(MATCHED)
+            string(REGEX REPLACE ${TARGET_OBJECTS_REGEX} ${CMAKE_MATCH_1} OBJECT_TARGET_NAME ${arg})
+            message(DEBUG "Parsed target:${OBJECT_TARGET_NAME} from ${arg} as TARGET_OBJECT library dependency for target: ${_TARGET} in ${CMAKE_CURRENT_FUNCTION}")
+            if(TARGET ${OBJECT_TARGET_NAME})
+                get_target_property(OBJECT_TARGET_TYPE ${OBJECT_TARGET_NAME} TYPE)
+                if(OBJECT_TARGET_TYPE)
+                    if(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
+
+                        # PASS interface link libraries and interface include directories on from $<TARGET_OBJECTS: ... >
+
+                        get_target_property(INHERITED_INTERFACE_INCLUDE_DIRECTORIES ${OBJECT_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+                        message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
+                        if(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
+                            target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
+                        else()
+                            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_INCLUDE_DIRECTORIES")
+                        endif(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
+
+                        get_target_property(INHERITED_INTERFACE_LINK_LIBRARIES ${OBJECT_TARGET_NAME} INTERFACE_LINK_LIBRARIES)
+                        message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
+                        if(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
+                            target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                        else()
+                            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_LINK_LIBRARIES")
+                        endif(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
+
+                    else()
+                        message(WARNING "Target:${OBJECT_TARGET_NAME} exists but does not have type:OBJECT_LIBRARY. There is a likely bug around in ${CMAKE_CURRENT_LIST_LINE} in ${CMAKE_CURRENT_LIST_FILE}.")
+                    endif(OBJECT_TARGET_TYPE STREQUAL OBJECT_LIBRARY)
+                endif(OBJECT_TARGET_TYPE)
+            else()
+                message(WARNING "Target:${OBJECT_TARGET_NAME} does not exist. There is a likely bug around in ${CMAKE_CURRENT_LIST_LINE} in ${CMAKE_CURRENT_LIST_FILE}.")
+            endif(TARGET ${OBJECT_TARGET_NAME})
+            
+        endif(MATCHED)
+    endforeach(arg ${_UNPARSED_ARGUMENTS})
+
+    set_target_properties(${_TARGET} 
+        PROPERTIES 
+            POSITION_INDEPENDENT_CODE ON
+    )
+
+    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_TARGET_EXPORT_NAME)
+
+    PackagerApi_get_version(${_PACKAGE} PACKAGE_VERSION)
+    set_target_properties(${_TARGET} PROPERTIES VERSION "${PACKAGE_VERSION}")
+
+    PackagerApi_get_cmake_component_name(${_PACKAGE} PACKAGE_CMAKE_COMPONENT)
+    PackagerApi_get_executable_component_name(${_PACKAGE} PACKAGE_BIN_COMPONENT)
+
+    PackagerApi_get_executable_files_install_reldir(${_PACKAGE} PACKAGE_BIN_INSTALL_DIR)
+    PackagerApi_get_cmake_files_install_reldir(${_PACKAGE} PACKAGE_INSTALL_CMAKE_DIR)
+    
+    PackagerApi_get_targets_export_name(${_PACKAGE} PACKAGE_EXPORT_NAME)
+    PackagerApi_get_targets_namespace(${_PACKAGE} PACKAGE_NAMESPACE)
+
+    install(
+        TARGETS ${_TARGET}
+        EXPORT  ${PACKAGE_TARGET_EXPORT_NAME}
+        DESTINATION ${PACKAGE_BIN_INSTALL_DIR}
+        COMPONENT ${PACKAGE_BIN_COMPONENT}
+    )
+
+    install(
+        EXPORT ${PACKAGE_EXPORT_NAME}
+        NAMESPACE ${PACKAGE_NAMESPACE}::
+        DESTINATION ${PACKAGE_INSTALL_CMAKE_DIR}
+        COMPONENT ${PACKAGE_CMAKE_COMPONENT}
+    )
+
+    
+endfunction(PackagerApi_add_executable)
 
 
 # Usage:
