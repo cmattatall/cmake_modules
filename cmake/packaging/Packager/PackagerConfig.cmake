@@ -41,4 +41,16 @@ function(Packager_configure_readme)
     endif(EXISTS "${PROJECT_SOURCE_DIR}/README.md")  
 endfunction(Packager_configure_readme)
 
+
+################################################################################
+# THIS MUST BE CALLED LAST IN THE TOP-LEVEL CMAKELISTS.TXT                     #
+################################################################################
+# AS IT FINALIZES THE SETTIGNS FOR ALL THE VARIABLES                           #
+# CONFIGURED USING THIS MODULE'S FUNCTIONS AND GENERATES THE CPACK CONFIG. #
+################################################################################
+macro(Packager_finalize_config)
+    include(CPack)
+endmacro(Packager_finalize_config)
+
+
 include(InstallRequiredSystemLibraries)

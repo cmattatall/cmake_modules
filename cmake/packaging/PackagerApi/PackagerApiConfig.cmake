@@ -243,9 +243,9 @@ endfunction(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPEND
 # AS IT FINALIZES THE SETTIGNS FOR ALL THE VARIABLES                           #
 # CONFIGURED USING THIS MODULE'S API FUNCTIONS AND GENERATES THE CPACK CONFIG. #
 ################################################################################
-macro(Packager_finalize_config)
-    include(CPack)
-endmacro(Packager_finalize_config)
+macro(PackagerApi_finalize_config)
+    Packager_finalize_config()
+endmacro(PackagerApi_finalize_config)
 
 
 # Usage:
