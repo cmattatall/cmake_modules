@@ -47,3 +47,11 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
 - Add find_package and cmake module support for the cppcheck static analysis module
 
 - Factor out common logic for propagation of `$<TARGET_OBJECTS: ... >` in PackagerApi_add_library and PackagerApi_add_executable
+
+- Add support for inter-package depenedencies. SPECIFICALLY - add implementations that use: <br>
+    - CPACK_DEBIAN_PACKAGE_DEPENDS 
+    - CPACK_DEBIAN_>COMPONENT< PACKAGE_DEPENDS
+
+
+LOOK INTO:
+https://cmake.org/cmake/help/v3.21/cpack_gen/deb.html#cpack_gen:CPack%20DEB%20Generator
