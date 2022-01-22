@@ -75,10 +75,13 @@ function run_test () {
             #
             # An easy way to check for this is if there is a CPackConfig.cmake in the build tree
             if [ -f "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" ]; then
+
+                mkdir tmp
                 set -o pipefail
-                cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" | tee --append "${TEST_LOGFILE}"
+                cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" -B tmp | tee --append "${TEST_LOGFILE}"
                 TEST_CPACK_RESULT="$?"
                 set +o pipefail
+                rm -r tmp
 
                 # Sadly, there is no --binary-dir option for cpack so we have to do our own cleanup :/
                 if [ -d _CPack_Packages ]; then
@@ -112,9 +115,12 @@ function run_test () {
             #
             # An easy way to check for this is if there is a CPackConfig.cmake in the build tree
             if [ -f "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" ]; then
+
+                mkdir tmp
                 set -o pipefail
-                TEST_CPACK_RESULT=$(cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" | tee --append "${TEST_LOGFILE}")
+                TEST_CPACK_RESULT=$(cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" -B tmp | tee --append "${TEST_LOGFILE}")
                 set +o pipefail
+                rm -r tmp
 
                 # Sadly, there is no --binary-dir option for cpack so we have to do our own cleanup :/
                 if [ -d _CPack_Packages ]; then
