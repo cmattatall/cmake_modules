@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 3.21)
 
 
+macro(Packager_config_metadata)
+
+    set(CPACK_PACKAGE_NAME ${PROJECT_NAME} CACHE INTERNAL "")
+    set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+    set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+    set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+    set(CPACK_PACKAGE_VENDOR "Carl Mattatall" CACHE INTERNAL "")
+    set(CPACK_PACKAGE_CONTACT "cmattatall2@gmail.com" CACHE INTERNAL "")
+
+endmacro(Packager_config_metadata)
+
+
 # This must be the first thing you call.
 macro(Packager_init)
 
@@ -11,13 +24,7 @@ macro(Packager_init)
     set(CPACK_STRIP_FILES ON CACHE INTERNAL "")
     set(CPACK_SET_DESTDIR OFF CACHE INTERNAL "")
 
-    set(CPACK_PACKAGE_NAME ${PROJECT_NAME} CACHE INTERNAL "")
-    set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-    set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-    set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-    
-    set(CPACK_PACKAGE_VENDOR "Carl Mattatall" CACHE INTERNAL "")
-    set(CPACK_PACKAGE_CONTACT "cmattatall2@gmail.com" CACHE INTERNAL "")
+
     set(CPACK_VERBATIM_VARIABLES YES CACHE INTERNAL "")
 
     if(UNIX)
