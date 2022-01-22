@@ -17,6 +17,18 @@ include(GNUInstallDirs)
 find_package(PkgConfig REQUIRED)
 
 find_package(Packager REQUIRED)
+find_package(PackagerDeb REQUIRED)
+find_package(PackagerRpm REQUIRED)
+find_package(PackagerTgz REQUIRED)
+find_package(PackagerZip REQUIRED)
+
+
+
+
+macro(PackagerApi_init)
+    # This does nothing for now, but we will put this here in the future
+endmacro(PackagerApi_init)
+
 
 
 function(PackagerApi_get_packages_listfile OUT_packages_listfile)
@@ -383,7 +395,6 @@ function(PackagerApi_add_package)
     
     util_is_version_valid(${_VERSION} VALID_VERSION)
     if(NOT VALID_VERSION)
-        message(VERBOSE "[in ${CMAKE_CURRENT_FUNCTION}] Argument VERSION does not match regex ${VALID_VERSION_REGEX}.")
         message(FATAL_ERROR "[in ${CMAKE_CURRENT_FUNCTION}] : VERSION argument given invalid value ${_VERSION}.")
     else()
         message(VERBOSE "Package \"${_PACKAGE}\" version \"${_VERSION}\" is valid.")
@@ -705,6 +716,216 @@ function(PackagerApi_add_library)
     endif()
     
 endfunction(PackagerApi_add_library)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Usage:
+# PackagerApi_add_cmake_package(
+#    CONFIG_FILE /abs/path/to/my_module_config_file <--- must end in Config.cmake
+#    VERSION 0.1.1
+#    [ PKG_TYPE ] [ DEB | TGZ | RPM | ZIP ] <--- defaults to DEB
+# )
+function(PackagerApi_add_cmake_package)
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
+    ############################################################################
+    # Developer configures these                                               #
+    ############################################################################
+
+    set(OPTION_ARGS
+        # ADD YOUR OPTIONAL ARGUMENTS
+    )
+
+    ##########################
+    # SET UP MONOVALUE ARGS  #
+    ##########################
+    set(SINGLE_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+        CONFIG_FILE
+        VERSION
+    )
+    set(SINGLE_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+        PKG_TYPE
+    )
+
+    ##########################
+    # SET UP MULTIVALUE ARGS #
+    ##########################
+    set(MULTI_VALUE_ARGS-REQUIRED
+        # Add your argument keywords here
+    )
+    set(MULTI_VALUE_ARGS-OPTIONAL
+        # Add your argument keywords here
+    )
+
+    ##########################
+    # CONFIGURE CHOICES FOR  #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # The naming is very specific. 
+    # If we wanted to restrict values 
+    # for a keyword FOO, we would set a 
+    # list called FOO-CHOICES
+    # set(FOO-CHOICES FOO1 FOO2 FOO3)
+    set(PKG_TYPE-CHOICES
+        DEB
+        TGZ
+        ZIP
+        RPM
+    )
+
+    ##########################
+    # CONFIGURE DEFAULTS FOR #
+    # SINGLE VALUE ARGUMENTS #
+    ##########################
+    # Note: Default values are not supported for members of OPTION_ARGS 
+    # (since not providing an option is FALSE)
+    #
+    # The naming is very specific. 
+    # If we wanted to provide a default value for a keyword BAR,
+    # we would set BAR-DEFAULT.
+    # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
+    set(PKG_TYPE-DEFAULT DEB)
+    
+
+    ############################################################################
+    # Perform the argument parsing                                             #
+    ############################################################################
+    set(SINGLE_VALUE_ARGS)
+    list(APPEND SINGLE_VALUE_ARGS ${SINGLE_VALUE_ARGS-REQUIRED} ${SINGLE_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES SINGLE_VALUE_ARGS)
+
+    set(MULTI_VALUE_ARGS)
+    list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
+    list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
+
+    cmake_parse_arguments(""
+        "${OPTION_ARGS}"
+        "${SINGLE_VALUE_ARGS}"
+        "${MULTI_VALUE_ARGS}"
+        "${ARGN}"
+    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _KEYWORDS_MISSING_VALUES=${_KEYWORDS_MISSING_VALUES}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : _UNPARSED_ARGUMENTS=${_UNPARSED_ARGUMENTS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
+
+    # Sanitize values for all required KWARGS
+    list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
+    if(NUM_MISSING_KWARGS GREATER 0)
+        foreach(arg ${_KEYWORDS_MISSING_VALUES})
+            message(WARNING "Keyword argument \"${arg}\" is missing a value.")
+        endforeach(arg ${_KEYWORDS_MISSING_VALUES})
+        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+    endif(NUM_MISSING_KWARGS GREATER 0)
+
+    # Ensure caller has provided required args
+    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+        foreach(arg ${${arglist}})
+            set(ARG_VALUE ${_${arg}})
+            if(NOT DEFINED ARG_VALUE)
+                if(DEFINED ${arg}-DEFAULT)
+                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
+                    set(_${arg} ${${arg}-DEFAULT})
+                else()
+                    if(${arg} IN_LIST ${arglist}-REQUIRED)
+                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
+                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
+                endif(DEFINED ${arg}-DEFAULT)
+            else()
+                if(DEFINED ${arg}-CHOICES)
+                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
+                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
+                endif(DEFINED ${arg}-CHOICES)
+            endif(NOT DEFINED ARG_VALUE)
+        endforeach(arg ${${arglist}})
+    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+
+    ##########################################
+    # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
+    ##########################################
+
+    if(NOT EXISTS ${_CONFIG_FILE})
+        message(FATAL_ERROR "[ in ${CMAKE_CURRENT_FUNCTION}, value for CONFIG_FILE : ${_CONFIG_FILE} invalid. File does not exist")
+    endif(NOT EXISTS ${_CONFIG_FILE})
+
+    get_filename_component(CONFIG_FILE_NAME ${_CONFIG_FILE} NAME)
+    string(REGEX MATCH "^.*Config\.cmake$" VALID_CONFIG_FILE_NAME ${CONFIG_FILE_NAME})
+    message(DEBUG "VALID_CONFIG_FILE_NAME:${VALID_CONFIG_FILE_NAME}")
+
+    if(NOT VALID_CONFIG_FILE_NAME)
+        message(FATAL_ERROR "Value for CONFIG_FILE : \"${_CONFIG_FILE}\" is not a valid cmake config file name")
+    endif(NOT VALID_CONFIG_FILE_NAME)
+    string(REGEX REPLACE "Config\.cmake$" "" MODULE_NAME ${VALID_CONFIG_FILE_NAME})
+
+    util_is_version_valid(${_VERSION} MODULE_VERSION_IS_VALID)
+    if(NOT MODULE_VERSION_IS_VALID)
+        message(FATAL_ERROR "[in ${CMAKE_CURRENT_FUNCTION}] : cmake package module: \"${MODULE_NAME}\" argument given invalid VERSION value ${_VERSION}.")
+    else()
+        message(VERBOSE "Package version for cmake package module : \"${MODULE_NAME}\" version \"${_VERSION}\" is valid.")
+    endif(NOT MODULE_VERSION_IS_VALID)
+
+    set(CMAKE_PACKAGE ${MODULE_NAME})
+    PackagerApi_add_package(
+        PACKAGE ${CMAKE_PACKAGE}
+        VERSION ${_VERSION}
+    )
+
+    set(MODULE_CONFIG_FILE ${CONFIG_FILE})
+
+    PackagerApi_get_version_file_path(${CMAKE_PACKAGE} MODULE_VERSION_FILE)
+    PackagerApi_get_cmake_files_install_reldir(${CMAKE_PACKAGE} PACKAGE_CMAKE_FILES_INSTALL_RELDIR)
+    PackagerApi_get_cmake_component_name(${CMAKE_PACKAGE} PACKAGE_CMAKE_COMPONENT_NAME)
+
+    write_basic_package_version_file(
+        ${MODULE_VERSION_FILE}
+        VERSION ${_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+
+    install(
+        FILES 
+            ${MODULE_CONFIG_FILE}
+            ${MODULE_VERSION_FILE}
+        COMPONENT ${PACKAGE_CMAKE_COMPONENT_NAME}
+        DESTINATION "${PACKAGE_CMAKE_FILES_INSTALL_RELDIR}"
+    )
+
+    if(_PKG_TYPE STREQUAL DEB)
+        PackagerDeb_init()
+        PackagerDeb_configure_package(${CMAKE_PACKAGE})
+    elseif(_PKG_TYPE STREQUAL RPM)
+        PackagerRpm_init()
+        PackagerRpm_configure_package(${CMAKE_PACKAGE})
+    elseif(_PKG_TYPE STREQUAL TGZ)
+        PackagerTgz_init()
+        PackagerTgz_configure_package(${CMAKE_PACKAGE})
+    elseif(_PKG_TYPE STREQUAL ZIP)
+        PackagerZip_init()
+        PackagerZip_configure_package(${CMAKE_PACKAGE})
+    else()
+        message(FATAL_ERROR "Unknown value : \"${_PKG_TYPE} for PKG_TYPE\"")
+    endif()
+    
+
+endfunction(PackagerApi_add_cmake_package)
 
 
 # Usage:

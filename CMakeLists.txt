@@ -17,17 +17,41 @@ foreach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
     list(APPEND CMAKE_PREFIX_PATH ${CONFIG_FILE_DIR})
 endforeach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
 
-
+# Use the project's own packaging API to bootstrap itself
 include(packaging/PackagerApi/PackagerApiConfig)
 include(packaging/PackagerDeb/PackagerDebConfig)
 
-add_subdirectory(cmake)
 
-
+# If built as a top-level project, we want to package the project.
+# 
+# However, don't self-package if not the top-level project - e.g.
+#   - as part of tests
+#   - grabbed using FetchContent
+#   - grabbed using ExternalProject
+#   - added from another project using find_package( )
+#   - etc.
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+
+    Packager_init()
+    PackagerApi_init()
+    PackagerDeb_init()
+
+    PackagerApi_add_package(
+        PACKAGE ${PROJECT_NAME}
+        VERSION ${PROJECT_VERSION}
+    )
+
+    foreach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
+        PackagerApi_add_cmake_package(
+            VERSION ${PROJECT_VERSION}
+            CONFIG_FILE ${CONFIG_FILE}
+            PKG_TYPE DEB
+        )
+    endforeach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
+
     Packager_config_metadata()
-    message(WARNING "CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR is TRUEEE")
-    set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
-    set(CPACK_GENERATOR DEB)
-    include(CPack)
+    PackagerDeb_configure_package(${PROJECT_NAME})
+    PackagerApi_finalize_config()
+
+
 endif(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
