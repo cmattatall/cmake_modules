@@ -7,7 +7,6 @@ project(CMateModules
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 file(GLOB_RECURSE CMAKE_MODULE_CONFIG_FILES 
-    "${PROJECT_SOURCE_DIR}/cmake/*-config\.cmake"
     "${PROJECT_SOURCE_DIR}/cmake/*Config\.cmake"
 )
 
@@ -33,13 +32,10 @@ include(packaging/PackagerDeb/PackagerDebConfig)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 
     Packager_init()
+    Packager_config_metadata()
+
     PackagerApi_init()
     PackagerDeb_init()
-
-    PackagerApi_add_package(
-        PACKAGE ${PROJECT_NAME}
-        VERSION ${PROJECT_VERSION}
-    )
 
     foreach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
         PackagerApi_add_cmake_package(
@@ -49,9 +45,8 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
         )
     endforeach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
 
-    Packager_config_metadata()
-    PackagerDeb_configure_package(${PROJECT_NAME})
     PackagerApi_finalize_config()
 
-
 endif(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+
+
