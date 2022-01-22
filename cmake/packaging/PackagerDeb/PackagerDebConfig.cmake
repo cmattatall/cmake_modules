@@ -52,8 +52,15 @@ endmacro(PackagerDeb_setup)
 
 
 # Brief: Configure PKG for debian packaging
-# 
+# Note:  ** DEPRECATED **
 function(PackagerDeb_configure PKG)
+    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Use PackagerDeb_configure_package instead.")
+    PackagerDeb_configure_package(${PKG})
+endfunction(PackagerDeb_configure PKG)
+
+
+# Brief: Configure PKG for debian packaging
+function(PackagerDeb_configure_package PKG)
     string(TOUPPER ${PKG} PKG_UPPER)
     PackagerApi_get_version(${PKG} PKG_VER)
     set(PKG_ARCH ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
@@ -92,8 +99,7 @@ function(PackagerDeb_configure PKG)
             WORLD_READ
         COMPONENT ${PKG_POSTINST_COMPONENT_NAME}
     )
-
-endfunction(PackagerDeb_configure PKG)
+endfunction(PackagerDeb_configure_package PKG)
 
 
 

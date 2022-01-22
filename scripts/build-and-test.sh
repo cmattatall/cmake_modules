@@ -36,10 +36,10 @@ function run_test () {
 
     echo "" # formatting
     echo "Running test: ${TEST_NAME}"
-    echo "Using TEST_CMAKE_SOURCE_DIR: ${TEST_CMAKE_SOURCE_DIR}"
-    echo "Using TEST_CMAKE_BUILD_DIR: ${TEST_CMAKE_BUILD_DIR}"
-    echo "Using TEST_LOGS_DIR: ${TEST_LOGS_DIR}"
-    echo "Using EXPECT_RETURN_CODE:${EXPECT_RETURN_CODE}"
+    echo "TEST_CMAKE_SOURCE_DIR: ${TEST_CMAKE_SOURCE_DIR}"
+    echo "TEST_CMAKE_BUILD_DIR: ${TEST_CMAKE_BUILD_DIR}"
+    echo "TEST_LOGS_DIR: ${TEST_LOGS_DIR}"
+    echo "EXPECT_RETURN_CODE:${EXPECT_RETURN_CODE}"
     echo "" # formatting
 
     set -o pipefail # If you don't do this, tee will "succeed" despite the command being piped to it failing
@@ -68,6 +68,33 @@ function run_test () {
             if [ "$ABORT_ON_FAILURE" == "ON" ]; then
                 exit -1
             fi
+        else
+
+            # Some of the tests may want us to try cpack after they build.
+            # Even if the configure and build steps succeed, we may need to try cpack.
+            #
+            # An easy way to check for this is if there is a CPackConfig.cmake in the build tree
+            if [ -f "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" ]; then
+                set -o pipefail
+                cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" | tee --append "${TEST_LOGFILE}"
+                TEST_CPACK_RESULT="$?"
+                set +o pipefail
+
+                # Sadly, there is no --binary-dir option for cpack so we have to do our own cleanup :/
+                if [ -d _CPack_Packages ]; then
+                    rm -r _CPack_Packages
+                fi
+
+                if [ "$TEST_CPACK_RESULT" != "0" ]; then
+                    echo "Post-build packaging for test: ${TEST_NAME} failed. Expected a 0 return code, but got ${TEST_CPACK_RESULT}. See "${TEST_LOGFILE}" for details."
+                    FAILED_POSITIVE_TESTS[${#FAILED_POSITIVE_TESTS[@]}]="${TEST_NAME}"
+                    ((FAILURE_COUNT=FAILURE_COUNT+1))
+                    if [ "$ABORT_ON_FAILURE" == "ON" ]; then
+                        exit -1
+                    fi
+                fi
+            fi
+
         fi
     else 
         # Negative test should return ANYTHING but 0
@@ -78,12 +105,39 @@ function run_test () {
             if [ "$ABORT_ON_FAILURE" == "ON" ]; then
                 exit -1
             fi
+        else
+
+            # Some of the tests may want us to try cpack after they build.
+            # Even if the configure and build steps succeed, we may need to try cpack.
+            #
+            # An easy way to check for this is if there is a CPackConfig.cmake in the build tree
+            if [ -f "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" ]; then
+                set -o pipefail
+                TEST_CPACK_RESULT=$(cpack --config "${TEST_CMAKE_BUILD_DIR}/CPackConfig.cmake" | tee --append "${TEST_LOGFILE}")
+                set +o pipefail
+
+                # Sadly, there is no --binary-dir option for cpack so we have to do our own cleanup :/
+                if [ -d _CPack_Packages ]; then
+                    rm -r _CPack_Packages
+                fi
+
+                if [ "$TEST_CPACK_RESULT" == "0" ]; then
+                    echo "Post-build packaging for test: ${TEST_NAME} failed. Expected NON-zero return code, but got ${TEST_CPACK_RESULT}. See "${TEST_LOGFILE}" for details."
+                    FAILED_POSITIVE_TESTS[${#FAILED_POSITIVE_TESTS[@]}]="${TEST_NAME}"
+                    ((FAILURE_COUNT=FAILURE_COUNT+1))
+                    if [ "$ABORT_ON_FAILURE" == "ON" ]; then
+                        exit -1
+                    fi
+                fi
+            fi
+
         fi
     fi            
 
     # If we get this far, the test has succeeded so we don't need the logs
-    rm "${TEST_LOGGING_DIR}/${TEST_NAME}.log"
+    rm "${TEST_LOGFILE}"
     [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
+    
 }
 
 
@@ -102,8 +156,6 @@ function run_tests () {
         local TESTCASE_CMAKE_BUILD_DIR="${TESTCASE_CMAKE_SOURCE_DIR}/build"
 
         local TEST_TYPE=$(echo $(basename $(dirname ${TESTCASE_CMAKE_SOURCE_DIR})) | sed 's/\//_/')
-        echo "TEST_TYPE:${TEST_TYPE}"
-
         if [ "${TEST_TYPE}" == "expect_success" ]; then
             run_test \
                 "${TESTCASE_CMAKE_SOURCE_DIR}"  \

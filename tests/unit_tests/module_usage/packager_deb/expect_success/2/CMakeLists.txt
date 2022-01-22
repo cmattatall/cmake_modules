@@ -18,9 +18,6 @@ project(
 )
 
 
-# FIND PACKAGES 
-find_package(PackagerApi REQUIRED)
-
 
 if(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
     message(FATAL_ERROR "SOURCE_CODE_DIR_ABSOLUTE not defined")
@@ -34,6 +31,9 @@ endif(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
+find_package(PackagerApi REQUIRED)
+find_package(PackagerDeb REQUIRED)
+PackagerDeb_setup()
 
 PackagerApi_add_package(
     PACKAGE ${PROJECT_NAME}
@@ -50,4 +50,5 @@ PackagerApi_add_executable(
 
 target_sources(single_main_executable PRIVATE ${SOURCE_CODE_DIR_ABSOLUTE}/single_main.cpp )
 
+PackagerDeb_configure_package(${PROJECT_NAME})
 PackagerApi_finalize_config()
