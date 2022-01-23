@@ -424,15 +424,15 @@ endfunction(GnuCoverage_target_add_coverage_definitions)
 #          MUST return ZERO always, even on errors.
 #          If not, no coverage report will be created!
 #
-# @param:  _coverage_filename (@type VALUE) (@required true)
-#          lcov output is generated as _coverage_filename.info
-#          HTML report is generated in _coverage_filename/index.html
+# @param:  _COVERAGE_FILENAME (@type VALUE) (@required true)
+#          lcov output is generated as _COVERAGE_FILENAME.info
+#          HTML report is generated in _COVERAGE_FILENAME/index.html
 #
 ################################################################################
-function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _coverage_filename)
+function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
     message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Use GnuCoverage_add_report_target")
-    GnuCoverage_setup_coverage_build_target(${_targetname} ${_testrunner} ${_coverage_filename} ${ARGN})
-endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _coverage_filename)
+    GnuCoverage_setup_coverage_build_target(${_targetname} ${_testrunner} ${_COVERAGE_FILENAME} ${ARGN})
+endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
 
 
 
@@ -534,8 +534,8 @@ function(GnuCoverage_add_report_target)
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
-    if(PROJECT_BINARY_DIR)
-        set(COVERAGE_DIR-DEFAULT ${PROJECT_BINARY_DIR})
+    if(_COVERAGE_DIR)
+        set(COVERAGE_DIR-DEFAULT ${_COVERAGE_DIR})
     else()
         set(COVERAGE_DIR-DEFAULT ${CMAKE_CURRENT_BINARY_DIR})
     endif()
@@ -679,15 +679,15 @@ function(GnuCoverage_add_report_target)
         message(FATAL_ERROR "genhtml not found! Aborting...")
     endif(NOT GENHTML_EXE_PATH)
 
-    set(COVERAGE_INFO_FILE "${PROJECT_BINARY_DIR}/${_COVERAGE_FILENAME}.info")
+    set(COVERAGE_INFO_FILE "${_COVERAGE_DIR}/${_COVERAGE_FILENAME}.info")
     set(COVERAGE_INFO_FILE_CLEANED "${COVERAGE_INFO_FILE}.cleaned")
 
-    separate_arguments(test_command UNIX_COMMAND "${_TEST_RUNNER}")
+    separate_arguments(TEST_RUNNER_COMMAND UNIX_COMMAND "${_TEST_RUNNER}")
 
-    if(IS_DIRECTORY ${PROJECT_BINARY_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${PROJECT_BINARY_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${PROJECT_BINARY_DIR}/_deps/*)
-    endif(IS_DIRECTORY ${PROJECT_BINARY_DIR}/_deps)
+    if(IS_DIRECTORY ${_COVERAGE_DIR}/_deps)
+        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/_deps)
+        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/_deps/*)
+    endif(IS_DIRECTORY ${_COVERAGE_DIR}/_deps)
 
     if(FETCHCONTENT_BASE_DIR)
         if(EXISTS ${FETCHCONTENT_BASE_DIR})
@@ -698,10 +698,10 @@ function(GnuCoverage_add_report_target)
     endif(FETCHCONTENT_BASE_DIR)
     
 
-    if(IS_DIRECTORY ${PROJECT_BINARY_DIR}/codegen)
-        list(APPEND LCOV_REMOVE ${PROJECT_BINARY_DIR}/codegen)
-        list(APPEND LCOV_REMOVE ${PROJECT_BINARY_DIR}/codegen/*)
-    endif(IS_DIRECTORY ${PROJECT_BINARY_DIR}/codegen)
+    if(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
+        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen)
+        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen/*)
+    endif(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
 
 
     find_program(PYTHON_EXECUTABLE NAMES python3)
@@ -713,47 +713,54 @@ function(GnuCoverage_add_report_target)
         message(FATAL_ERROR "gcovr not found! Aborting...")
     endif(NOT GCOVR_EXE_PATH)
 
-    set(REPORT_SUMMARY_FILE ${PROJECT_BINARY_DIR}/${_coverage_filename}/coverage_summary.txt)
-    set(COVERAGE_REPORT_FILE ${PROJECT_BINARY_DIR}/${_coverage_filename}/coverage_report.html)
+    set(REPORT_SUMMARY_FILE ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/coverage_summary.txt)
+    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/coverage_report.html)
 
     set(COVERAGE_CREATION_COMMENT "Resetting code coverage counters to zero.\n")
     set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}Processing code coverage counters and generating report.\n")
     set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}Open ${COVERAGE_REPORT_FILE} in your browser to view the coverage report.")
     
-    # Setup target
+    # Setup code coverage and profiling targets
+    #
+    # If we want to build the report as a post-build task,
+    # add the custom target to the default build group so it is always built.
+    set(COVERAGE_TARGET_SCOPE "")
+    if(_POST_BUILD)
+        set(COVERAGE_TARGET_SCOPE ALL) 
+    endif(_POST_BUILD)
+    
     add_custom_target(
-        ${_COVERAGE_TARGET} ${LCOV_EXE_PATH} --directory ${PROJECT_BINARY_DIR} --zerocounters # Cleanup lcov
-        COMMAND ${test_command} ${ARGV3} # Run tests
+        ${_COVERAGE_TARGET} ${COVERAGE_TARGET_SCOPE}
+        ${LCOV_EXE_PATH} --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
+        COMMAND ${TEST_RUNNER_COMMAND}
 
         # Capturing lcov counters and generating report
-        COMMAND ${LCOV_EXE_PATH} --directory ${PROJECT_BINARY_DIR} --capture --output-file ${COVERAGE_INFO_FILE}  --exclude "\"${PROJECT_BINARY_DIR}/*\""
+        COMMAND ${LCOV_EXE_PATH} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE}  --exclude "\"${_COVERAGE_DIR}/*\""
         COMMAND ${LCOV_EXE_PATH} --remove ${COVERAGE_INFO_FILE} ${LCOV_REMOVE}  '/usr/*' '${PROJECT_SOURCE_DIR}/tests/*' --output-file ${COVERAGE_INFO_FILE_CLEANED}
-        COMMAND ${GENHTML_EXE_PATH} -o ${_coverage_filename} ${COVERAGE_INFO_FILE_CLEANED}
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+        COMMAND ${GENHTML_EXE_PATH} -o ${_COVERAGE_FILENAME} ${COVERAGE_INFO_FILE_CLEANED}
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
         COMMENT ${COVERAGE_CREATION_COMMENT}
         USES_TERMINAL
     )
 
-    if(_POST_BUILD)
-        add_custom_command(
-            TARGET ${_COVERAGE_TARGET}
-            POST_BUILD
+    add_custom_command(
+        TARGET ${_COVERAGE_TARGET}
+        POST_BUILD
 
-            # TODO: FIXME
-            # This is terrible because i/o redirection doesnt work on many platforms (e.g. Windows)
-            #                                                                |
-            #                                                                |
-            #                                                                v
-            COMMAND ${LCOV_EXE_PATH} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${REPORT_SUMMARY_FILE}
-            COMMAND ${CMAKE_COMMAND} -E rename ${PROJECT_BINARY_DIR}/${_coverage_filename}/index.html ${COVERAGE_REPORT_FILE}
-            COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
-            MAIN_DEPENDENCY ${COVERAGE_INFO_FILE_CLEANED}
-            DEPENDS ${COVERAGE_INFO_FILE_CLEANED} ${COVERAGE_INFO_FILE}
-            BYPRODUCTS ${REPORT_SUMMARY_FILE} ${COVERAGE_REPORT_FILE}
-            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-            COMMENT "Performing post-build tasks for target \"${_COVERAGE_TARGET}\""
-            USES_TERMINAL
-        )
-    endif(_POST_BUILD)
+        # TODO: FIXME
+        # This is terrible because i/o redirection doesnt work on many platforms (e.g. Windows)
+        #                                                                |
+        #                                                                |
+        #                                                                v
+        COMMAND ${LCOV_EXE_PATH} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${REPORT_SUMMARY_FILE}
+        COMMAND ${CMAKE_COMMAND} -E rename ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/index.html ${COVERAGE_REPORT_FILE}
+        COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
+        MAIN_DEPENDENCY ${COVERAGE_INFO_FILE_CLEANED}
+        DEPENDS ${COVERAGE_INFO_FILE_CLEANED} ${COVERAGE_INFO_FILE}
+        BYPRODUCTS ${REPORT_SUMMARY_FILE} ${COVERAGE_REPORT_FILE}
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        COMMENT "Performing post-build tasks for target \"${_COVERAGE_TARGET}\""
+        USES_TERMINAL
+    )
     
 endfunction(GnuCoverage_add_report_target) 
