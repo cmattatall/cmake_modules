@@ -467,7 +467,6 @@ function(PackagerApi_add_package)
 endfunction(PackagerApi_add_package)
 
 
-
 # Usage:
 # PackagerApi_add_library(
 #    PACKAGE package 
@@ -716,23 +715,6 @@ function(PackagerApi_add_library)
     endif()
     
 endfunction(PackagerApi_add_library)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Usage:

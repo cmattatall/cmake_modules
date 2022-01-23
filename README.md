@@ -52,6 +52,8 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
     - CPACK_DEBIAN_PACKAGE_DEPENDS 
     - CPACK_DEBIAN_>COMPONENT< PACKAGE_DEPENDS
 
+- Fix code coverage report generation using stdout redirection (see GnuCoverageConfig.cmake::GnuCoverage_setup_coverage_build_target). This will not work on windows platforms
+
 
 LOOK INTO:
 https://cmake.org/cmake/help/v3.21/cpack_gen/deb.html#cpack_gen:CPack%20DEB%20Generator
