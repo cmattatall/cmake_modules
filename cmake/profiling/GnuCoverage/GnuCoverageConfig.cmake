@@ -38,43 +38,66 @@
 ################################################################################
 # Usage:                                                                       #
 # -----------------------------------------------------------------------------#
-# 0. (Mac only) If you use Xcode 5.1 make sure to patch geninfo as described here:
-#      http://stackoverflow.com/a/22404544/80480
-#
-# 1. Copy this file into your cmake modules path. It must be discoverable by
-#    find_package()
-#
-# 2. Add the following line to your CMakeLists.txt:
-#      find_package(GnuCoverage)
-#    
-#    
-#
-# 3. Set compiler flags to turn off optimization and enable coverage:
-#    set(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-#	 set(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-#
-# 3. Use the function setup_executable_for_coverage to create a custom make target
-#    which runs your test executable and produces a lcov code coverage report:
-#    Example:
-#	 setup_executable_for_coverage(
-#				my_coverage_target  # Name for custom target.
-#				test_driver         # Name of the test driver executable that runs the tests.
-#									# NOTE! This should always have a ZERO as exit code
-#									# otherwise the coverage generation will not complete.
-#				coverage            # Name of output directory.
-#				)
-#
-# 4. Build a Debug build:
-#	 cmake -DCMAKE_BUILD_TYPE=Debug ..
-#	 make
-#	 make my_coverage_target
-#
-#
+# 0. (Mac only) If you use Xcode 5.1 make sure to patch geninfo as             #
+#    described here: http://stackoverflow.com/a/22404544/80480                 #
+#                                                                              #
+# 1. Add this file into your cmake modules path. It must be discoverable by    #    
+#    find_package()                                                            #
+#                                                                              #
+# 2. Add the following line to your CMakeLists.txt:                            #
+#    find_package(GnuCoverage)                                                 #
+#                                                                              #
+# 3. Initialize the module:                                                    #
+#    GnuCoverage_init()                                                        #
+#                                                                              #
+# 4. Create a library or target to test:                                       #
+#    e.g.                                                                      #
+#    add_library(my_lib_to_test)                                               #
+#    target_sources(my_lib_to_test PRIVATE lib_src1.cpp lib_src2.cpp)          #
+#                                                                              #
+# 5. Configure the library target for coverage profiling:                      #
+#    GnuCoverage_target_add_coverage_definitions(                              #
+#       TARGET my_lib_to_test                                                  #
+#    )                                                                         #
+#                                                                              #
+# 6. Add a test runner executable:                                             #
+#    e.g.                                                                      #
+#    add_executable(unit_tests)                                                #
+#    target_sources(unit_tests PRIVATE test_main.cpp test1.cpp test2.cpp)      #
+#    target_link_libraries(unit_tests PRIVATE my_lib_to_test)                  #
+#                                                                              #
+# 7. Create a build target to generate the code coverage report:               #
+#    GnuCoverage_add_report_target(                                            #
+#        COVERAGE_TARGET     coverage                                          #
+#        TEST_RUNNER         unit_tests                                        #
+#        COVERAGE_FILENAME   coverage-report                                   #
+#        [ POST_BUILD ]                                                        #
+#    )                                                                         #
+#                                                                              #
+# 8. Build your cmake project like normal                                      #
+#    $ cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug && cmake --build build     #
+#                                                                              #
+# 9. Make the coverage report. Not required if POST_BUILD is specified.        #
+#    $cd build                                                                 #
+#    $ make coverage                                                           #
+#                                                                              #
 ################################################################################
 
 
 
-
+################################################################################
+# @name: GnuCoverage_init
+#
+# @brief
+# Initialize the GnuCoverage cmake module
+#
+# @note
+# - CALL THIS FIRST BEFORE ANY OTHER GnuCoverage functions
+#
+# @usage 
+# GnuCoverage_init()
+#
+################################################################################
 macro(GnuCoverage_init)
     
     # Check prereqs
@@ -146,28 +169,45 @@ endmacro(GnuCoverage_init)
 
 
 
-
+################################################################################
+# @name: GnuCoverage_remove_by_pattern
+#
+# @brief
+# Exclude a specific filepath pattern from the code coverage profiling
+#
+# @note
+# Uses cmake regex
+#
+# @usage 
+# GnuCoverage_remove_by_pattern( "/usr/include/*\.hpp" )
+#
+################################################################################
 macro(GnuCoverage_remove_by_pattern pattern)
     set(LCOV_REMOVE "${LCOV_REMOVE};${pattern}")
 endmacro(GnuCoverage_remove_by_pattern pattern)
 
 
-# Name:
-# GnuCoverage_target_coverage_defs
+
+################################################################################
+# @name: GnuCoverage_target_add_coverage_definitions
 #
-# Brief:
+# @brief
 # Add the necessary compile definitions to target TARGET so it can be profiled
 # using code coverage tools
-# 
-# Usage:
-# GnuCoverage_target_coverage_defs(
+#
+#
+# @usage 
+# GnuCoverage_target_add_coverage_definitions(
 #    TARGET my_target_with_sources
 # )
 #
-# Param:
-# TARGET the target to add the coverage compile definitions
+# @param       TARGET
+# @type        VALUE
+# @required    TRUE
+# @description The target to add the coverage compile definitions
+#
 ################################################################################
-function(GnuCoverage_target_coverage_defs)
+function(GnuCoverage_target_add_coverage_definitions)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -292,7 +332,7 @@ function(GnuCoverage_target_coverage_defs)
 
     target_compile_options(${_TARGET} PRIVATE  -fprofile-arcs -ftest-coverage)
 
-endfunction(GnuCoverage_target_coverage_defs)
+endfunction(GnuCoverage_target_add_coverage_definitions)
 
 
 
@@ -303,15 +343,15 @@ endfunction(GnuCoverage_target_coverage_defs)
 # Create a build target _targetname that generates a code coverage report
 #
 # @note
-#  - DEPRECATED. USE GnuCoverage_add_coverage_report_target instead
+#  - DEPRECATED. USE GnuCoverage_add_report_target instead
 #  - Optional fourth parameter is passed as arguments to _testrunner
 #    Pass them in list form, e.g.: "-j;2" for -j 2
 #
 # @usage: 
 # GnuCoverage_setup_executable_for_coverage(
-#  my-target-name-whatever-i-want-it-to-be-called
-#  my-existing-test-runner-target-created-using-add_executable
-#  name-of-my-coverage-report
+#   coverage-report-target
+#   test-runner-exe
+#   report_name
 # )
 #
 # @param:  _targetname (@paramtype VALUE) (@required true)
@@ -328,24 +368,25 @@ endfunction(GnuCoverage_target_coverage_defs)
 #
 ################################################################################
 function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _coverage_filename)
-    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Use GnuCoverage_add_coverage_report_target")
+    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Use GnuCoverage_add_report_target")
     GnuCoverage_setup_coverage_build_target(${_targetname} ${_testrunner} ${_coverage_filename} ${ARGN})
 endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _coverage_filename)
 
 
 
 ################################################################################
-# @name: GnuCoverage_add_coverage_report_target
+# @name: GnuCoverage_add_report_target
 #
 # @brief
 # Create a build target that generates a code coverage report
 #
 # @usage 
-# GnuCoverage_add_coverage_report_target(
+# GnuCoverage_add_report_target(
 #   COVERAGE_TARGET     coverage
 #   TEST_RUNNER         my-test-runner
 #   COVERAGE_FILENAME   coverage-report
 #   [ COVERAGE_DIR ] /my/coverage/directory/can/be/relative/or/absolute
+#   [ POST_BUILD ]
 # )
 #
 # @param       COVERAGE_TARGET
@@ -367,9 +408,14 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _c
 # @type        VALUE
 # @required    FALSE
 # @description The directory in which to generate the code coverage reports
+#
+# @param       POST_BUILD
+# @type        OPTION
+# @required    FALSE
+# @description Option to automatically generate the coverage report post-build
 #       
 ################################################################################
-function(GnuCoverage_add_coverage_report_target)
+function(GnuCoverage_add_report_target)
 
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
@@ -378,6 +424,7 @@ function(GnuCoverage_add_coverage_report_target)
 
     set(OPTION_ARGS
         # ADD YOUR OPTIONAL ARGUMENTS
+        POST_BUILD
     )
 
     ##########################
@@ -553,7 +600,7 @@ function(GnuCoverage_add_coverage_report_target)
     
     # Setup target
     add_custom_target(
-        ${_coverage_build_target} ${LCOV_EXE_PATH} --directory ${PROJECT_BINARY_DIR} --zerocounters # Cleanup lcov
+        ${_COVERAGE_TARGET} ${LCOV_EXE_PATH} --directory ${PROJECT_BINARY_DIR} --zerocounters # Cleanup lcov
         COMMAND ${test_command} ${ARGV3} # Run tests
 
         # Capturing lcov counters and generating report
@@ -565,24 +612,29 @@ function(GnuCoverage_add_coverage_report_target)
         USES_TERMINAL
     )
 
+    if(_POST_BUILD)
 
-    add_custom_command(
-        TARGET ${_coverage_build_target}
-        POST_BUILD
+        add_custom_command(
+            TARGET ${_COVERAGE_TARGET}
+            POST_BUILD
 
-        # TODO: FIXME
-        # This is terrible because i/o redirection doesnt work on many platforms (e.g. Windows)
-        #                                                                |
-        #                                                                |
-        #                                                                v
-        COMMAND ${LCOV_EXE_PATH} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${REPORT_SUMMARY_FILE}
-        COMMAND ${CMAKE_COMMAND} -E rename ${PROJECT_BINARY_DIR}/${_coverage_filename}/index.html ${COVERAGE_REPORT_FILE}
-        COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
-        MAIN_DEPENDENCY ${COVERAGE_INFO_FILE_CLEANED}
-        DEPENDS ${COVERAGE_INFO_FILE_CLEANED} ${COVERAGE_INFO_FILE}
-        BYPRODUCTS ${REPORT_SUMMARY_FILE} ${COVERAGE_REPORT_FILE}
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        COMMENT "Performing post-build tasks for target \"${_coverage_build_target}\""
-        USES_TERMINAL
-    )
+            # TODO: FIXME
+            # This is terrible because i/o redirection doesnt work on many platforms (e.g. Windows)
+            #                                                                |
+            #                                                                |
+            #                                                                v
+            COMMAND ${LCOV_EXE_PATH} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${REPORT_SUMMARY_FILE}
+            COMMAND ${CMAKE_COMMAND} -E rename ${PROJECT_BINARY_DIR}/${_coverage_filename}/index.html ${COVERAGE_REPORT_FILE}
+            COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
+            MAIN_DEPENDENCY ${COVERAGE_INFO_FILE_CLEANED}
+            DEPENDS ${COVERAGE_INFO_FILE_CLEANED} ${COVERAGE_INFO_FILE}
+            BYPRODUCTS ${REPORT_SUMMARY_FILE} ${COVERAGE_REPORT_FILE}
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            COMMENT "Performing post-build tasks for target \"${_COVERAGE_TARGET}\""
+            USES_TERMINAL
+        )
+    endif(_POST_BUILD)
+
+    message(WARNING "_POST_BUILD:${_POST_BUILD}")
+    
 endfunction(GnuCoverage_setup_coverage_build_target) 
