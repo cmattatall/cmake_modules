@@ -331,6 +331,34 @@ function(PackagerApi_add_package)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
 
+    # SINGLE_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for SINGLE_VALUE_ARGS ... ")
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                if(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                endif(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+    
+    # MULTI_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for MULTI_VALUE_ARGS ... ")
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                foreach(LIST_ELEMENT ${${ARG}-DEFAULT})
+                    if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                        message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                    endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                endforeach(LIST_ELEMENT ${${ARG}-DEFAULT})
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
         "${SINGLE_VALUE_ARGS}"
@@ -342,38 +370,71 @@ function(PackagerApi_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
-
-    # Sanitize values for all required KWARGS
+    # Sanitize keywords for all required KWARGS
     list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
     if(NUM_MISSING_KWARGS GREATER 0)
         foreach(arg ${_KEYWORDS_MISSING_VALUES})
             message(WARNING "Keyword argument \"${arg}\" is missing a value.")
         endforeach(arg ${_KEYWORDS_MISSING_VALUES})
-        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+        message(FATAL_ERROR "One or more required keyword arguments are missing their values.")
     endif(NUM_MISSING_KWARGS GREATER 0)
 
-    # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
-        foreach(arg ${${arglist}})
-            set(ARG_VALUE ${_${arg}})
-            if(NOT DEFINED ARG_VALUE)
-                if(DEFINED ${arg}-DEFAULT)
-                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
-                    set(_${arg} ${${arg}-DEFAULT})
-                else()
-                    if(${arg} IN_LIST ${arglist}-REQUIRED)
-                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
-                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
-                endif(DEFINED ${arg}-DEFAULT)
-            else()
-                if(DEFINED ${arg}-CHOICES)
-                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
-                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                endif(DEFINED ${arg}-CHOICES)
-            endif(NOT DEFINED ARG_VALUE)
-        endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+    # Process required single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+
+    # Process optional single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+                message(FATAL_ERROR "Keyword argument \"${ARG}\" given invalid value: \"${_${ARG}}\". \n Choices: ${${ARG}-CHOICES}.")
+            endif(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    
+    # Process required multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+    
+    # Process optional multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        else()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            foreach(LIST_ELEMENT ${_${ARG}})
+                if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "Keyword argument \"${ARG}\" given an invalid value: \"${LIST_ELEMENT}\". \n Choices: ${${ARG}-CHOICES}.")
+                endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+            endforeach(LIST_ELEMENT ${_${ARG}})
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
@@ -471,7 +532,7 @@ endfunction(PackagerApi_add_package)
 # PackagerApi_add_library(
 #    PACKAGE package 
 #    TARGET target_name 
-#    TARGET_TYPE [ OBJECT | STATIC | SHARED | INTERFACE ]
+#    [ TARGET_TYPE] [ OBJECT | STATIC | SHARED | INTERFACE ] <--- SHARED is the default
 # )
 function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
@@ -490,10 +551,10 @@ function(PackagerApi_add_library)
         # Add your argument keywords here
         PACKAGE
         TARGET
-        TARGET_TYPE
     )
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
+        TARGET_TYPE
     )
 
     ##########################
@@ -547,6 +608,34 @@ function(PackagerApi_add_library)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
 
+    # SINGLE_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for SINGLE_VALUE_ARGS ... ")
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                if(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                endif(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+    
+    # MULTI_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for MULTI_VALUE_ARGS ... ")
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                foreach(LIST_ELEMENT ${${ARG}-DEFAULT})
+                    if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                        message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                    endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                endforeach(LIST_ELEMENT ${${ARG}-DEFAULT})
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
         "${SINGLE_VALUE_ARGS}"
@@ -558,37 +647,71 @@ function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
-    # Sanitize values for all required KWARGS
+    # Sanitize keywords for all required KWARGS
     list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
     if(NUM_MISSING_KWARGS GREATER 0)
         foreach(arg ${_KEYWORDS_MISSING_VALUES})
             message(WARNING "Keyword argument \"${arg}\" is missing a value.")
         endforeach(arg ${_KEYWORDS_MISSING_VALUES})
-        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+        message(FATAL_ERROR "One or more required keyword arguments are missing their values.")
     endif(NUM_MISSING_KWARGS GREATER 0)
 
-    # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
-        foreach(arg ${${arglist}})
-            set(ARG_VALUE ${_${arg}})
-            if(NOT DEFINED ARG_VALUE)
-                if(DEFINED ${arg}-DEFAULT)
-                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
-                    set(_${arg} ${${arg}-DEFAULT})
-                else()
-                    if(${arg} IN_LIST ${arglist}-REQUIRED)
-                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
-                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
-                endif(DEFINED ${arg}-DEFAULT)
-            else()
-                if(DEFINED ${arg}-CHOICES)
-                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
-                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                endif(DEFINED ${arg}-CHOICES)
-            endif(NOT DEFINED ARG_VALUE)
-        endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+    # Process required single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+
+    # Process optional single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+                message(FATAL_ERROR "Keyword argument \"${ARG}\" given invalid value: \"${_${ARG}}\". \n Choices: ${${ARG}-CHOICES}.")
+            endif(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    
+    # Process required multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+    
+    # Process optional multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        else()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            foreach(LIST_ELEMENT ${_${ARG}})
+                if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "Keyword argument \"${ARG}\" given an invalid value: \"${LIST_ELEMENT}\". \n Choices: ${${ARG}-CHOICES}.")
+                endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+            endforeach(LIST_ELEMENT ${_${ARG}})
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
@@ -797,6 +920,34 @@ function(PackagerApi_add_cmake_package)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
 
+    # SINGLE_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for SINGLE_VALUE_ARGS ... ")
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                if(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                endif(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+    
+    # MULTI_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for MULTI_VALUE_ARGS ... ")
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                foreach(LIST_ELEMENT ${${ARG}-DEFAULT})
+                    if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                        message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                    endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                endforeach(LIST_ELEMENT ${${ARG}-DEFAULT})
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
         "${SINGLE_VALUE_ARGS}"
@@ -808,37 +959,71 @@ function(PackagerApi_add_cmake_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
-    # Sanitize values for all required KWARGS
+    # Sanitize keywords for all required KWARGS
     list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
     if(NUM_MISSING_KWARGS GREATER 0)
         foreach(arg ${_KEYWORDS_MISSING_VALUES})
             message(WARNING "Keyword argument \"${arg}\" is missing a value.")
         endforeach(arg ${_KEYWORDS_MISSING_VALUES})
-        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+        message(FATAL_ERROR "One or more required keyword arguments are missing their values.")
     endif(NUM_MISSING_KWARGS GREATER 0)
 
-    # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
-        foreach(arg ${${arglist}})
-            set(ARG_VALUE ${_${arg}})
-            if(NOT DEFINED ARG_VALUE)
-                if(DEFINED ${arg}-DEFAULT)
-                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
-                    set(_${arg} ${${arg}-DEFAULT})
-                else()
-                    if(${arg} IN_LIST ${arglist}-REQUIRED)
-                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
-                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
-                endif(DEFINED ${arg}-DEFAULT)
-            else()
-                if(DEFINED ${arg}-CHOICES)
-                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
-                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                endif(DEFINED ${arg}-CHOICES)
-            endif(NOT DEFINED ARG_VALUE)
-        endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+    # Process required single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+
+    # Process optional single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+                message(FATAL_ERROR "Keyword argument \"${ARG}\" given invalid value: \"${_${ARG}}\". \n Choices: ${${ARG}-CHOICES}.")
+            endif(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    
+    # Process required multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+    
+    # Process optional multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        else()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            foreach(LIST_ELEMENT ${_${ARG}})
+                if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "Keyword argument \"${ARG}\" given an invalid value: \"${LIST_ELEMENT}\". \n Choices: ${${ARG}-CHOICES}.")
+                endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+            endforeach(LIST_ELEMENT ${_${ARG}})
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
@@ -981,6 +1166,34 @@ function(PackagerApi_add_executable)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
 
+    # SINGLE_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for SINGLE_VALUE_ARGS ... ")
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                if(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                endif(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+    
+    # MULTI_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for MULTI_VALUE_ARGS ... ")
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                foreach(LIST_ELEMENT ${${ARG}-DEFAULT})
+                    if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                        message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                    endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                endforeach(LIST_ELEMENT ${${ARG}-DEFAULT})
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
         "${SINGLE_VALUE_ARGS}"
@@ -992,37 +1205,71 @@ function(PackagerApi_add_executable)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
-    # Sanitize values for all required KWARGS
+    # Sanitize keywords for all required KWARGS
     list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
     if(NUM_MISSING_KWARGS GREATER 0)
         foreach(arg ${_KEYWORDS_MISSING_VALUES})
             message(WARNING "Keyword argument \"${arg}\" is missing a value.")
         endforeach(arg ${_KEYWORDS_MISSING_VALUES})
-        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+        message(FATAL_ERROR "One or more required keyword arguments are missing their values.")
     endif(NUM_MISSING_KWARGS GREATER 0)
 
-    # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
-        foreach(arg ${${arglist}})
-            set(ARG_VALUE ${_${arg}})
-            if(NOT DEFINED ARG_VALUE)
-                if(DEFINED ${arg}-DEFAULT)
-                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
-                    set(_${arg} ${${arg}-DEFAULT})
-                else()
-                    if(${arg} IN_LIST ${arglist}-REQUIRED)
-                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
-                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
-                endif(DEFINED ${arg}-DEFAULT)
-            else()
-                if(DEFINED ${arg}-CHOICES)
-                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
-                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                endif(DEFINED ${arg}-CHOICES)
-            endif(NOT DEFINED ARG_VALUE)
-        endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS;")
+    # Process required single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+
+    # Process optional single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+                message(FATAL_ERROR "Keyword argument \"${ARG}\" given invalid value: \"${_${ARG}}\". \n Choices: ${${ARG}-CHOICES}.")
+            endif(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    
+    # Process required multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+    
+    # Process optional multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        else()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            foreach(LIST_ELEMENT ${_${ARG}})
+                if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "Keyword argument \"${ARG}\" given an invalid value: \"${LIST_ELEMENT}\". \n Choices: ${${ARG}-CHOICES}.")
+                endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+            endforeach(LIST_ELEMENT ${_${ARG}})
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
@@ -1205,6 +1452,34 @@ function(PackagerApi_target_install_headers)
     list(APPEND MULTI_VALUE_ARGS ${MULTI_VALUE_ARGS-REQUIRED} ${MULTI_VALUE_ARGS-OPTIONAL})
     list(REMOVE_DUPLICATES MULTI_VALUE_ARGS)
 
+    # SINGLE_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for SINGLE_VALUE_ARGS ... ")
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                if(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                endif(NOT (${${ARG}-DEFAULT} IN_LIST ${ARG}-CHOICES))
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+    
+    # MULTI_VALUE_ARGS LOGIC-CONSISTENCY CHECK
+    message(VERBOSE "Performing self-consistency logic check for MULTI_VALUE_ARGS ... ")
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(DEFINED ${ARG}-DEFAULT)
+                foreach(LIST_ELEMENT ${${ARG}-DEFAULT})
+                    if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                        message(FATAL_ERROR "The argument choices and defaults configured for ${CMAKE_CURRENT_FUNCTION} are inconsistent. This is a development error. Please contact the maintainer.")
+                    endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                endforeach(LIST_ELEMENT ${${ARG}-DEFAULT})
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
+    message(VERBOSE "Ok.")
+
     cmake_parse_arguments(""
         "${OPTION_ARGS}"
         "${SINGLE_VALUE_ARGS}"
@@ -1216,38 +1491,71 @@ function(PackagerApi_target_install_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : SINGLE_VALUE_ARGS=${SINGLE_VALUE_ARGS}")
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : MULTI_VALUE_ARGS=${MULTI_VALUE_ARGS}")
 
-    # Sanitize values for all required KWARGS
+    # Sanitize keywords for all required KWARGS
     list(LENGTH _KEYWORDS_MISSING_VALUES NUM_MISSING_KWARGS)
     if(NUM_MISSING_KWARGS GREATER 0)
         foreach(arg ${_KEYWORDS_MISSING_VALUES})
             message(WARNING "Keyword argument \"${arg}\" is missing a value.")
         endforeach(arg ${_KEYWORDS_MISSING_VALUES})
-        message(FATAL_ERROR "One or more required keyword arguments are missing a value in call to ${CMAKE_CURRENT_FUNCTION}")
+        message(FATAL_ERROR "One or more required keyword arguments are missing their values.")
     endif(NUM_MISSING_KWARGS GREATER 0)
 
-    # Ensure caller has provided required args
-    foreach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
-        foreach(arg ${${arglist}})
-            set(ARG_VALUE ${_${arg}})
-            if(NOT DEFINED ARG_VALUE)
-                if(DEFINED ${arg}-DEFAULT)
-                    message(WARNING "keyword argument: \"${arg}\" not provided. Using default value of ${${arg}-DEFAULT}")
-                    set(_${arg} ${${arg}-DEFAULT})
-                else()
-                    if(${arg} IN_LIST ${arglist}-REQUIRED)
-                        message(FATAL_ERROR "Required keyword argument: \"${arg}\" not provided")
-                    endif(${arg} IN_LIST ${arglist}-REQUIRED)
-                endif(DEFINED ${arg}-DEFAULT)
-            else()
-                if(DEFINED ${arg}-CHOICES)
-                    if(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                        message(FATAL_ERROR "Keyword argument \"${arg}\" given invalid value: \"${ARG_VALUE}\". \n Choices: ${${arg}-CHOICES}.")
-                    endif(NOT (${ARG_VALUE} IN_LIST ${arg}-CHOICES))
-                endif(DEFINED ${arg}-CHOICES)
-            endif(NOT DEFINED ARG_VALUE)
-        endforeach(arg ${${arglist}})
-    endforeach(arglist "SINGLE_VALUE_ARGS;MULTI_VALUE_ARGS")
+    # Process required single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-REQUIRED})
 
+    # Process optional single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${SINGLE_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for single-value keyword arguments
+    foreach(ARG ${SINGLE_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            if(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+                message(FATAL_ERROR "Keyword argument \"${ARG}\" given invalid value: \"${_${ARG}}\". \n Choices: ${${ARG}-CHOICES}.")
+            endif(NOT (${_${ARG}} IN_LIST ${ARG}-CHOICES))
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${SINGLE_VALUE_ARGS})
+    
+    # Process required multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+        if(NOT DEFINED _${ARG})
+            message(FATAL_ERROR "Required keyword argument: ${ARG} not provided.")
+            return()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-REQUIRED})
+    
+    # Process optional multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+        if(NOT DEFINED _${ARG})
+            if(DEFINED ${ARG}-DEFAULT)
+                set(_${ARG} ${${ARG}-DEFAULT})
+                message(VERBOSE "Value for keyword argument: ${ARG} not given. Used default value of ${_${ARG}}")
+            endif(DEFINED ${ARG}-DEFAULT)
+        else()
+        endif(NOT DEFINED _${ARG})
+    endforeach(ARG ${MULTI_VALUE_ARGS-OPTIONAL})
+
+    # Validate choices for multi-value keyword arguments
+    foreach(ARG ${MULTI_VALUE_ARGS})
+        if(DEFINED ${ARG}-CHOICES)
+            foreach(LIST_ELEMENT ${_${ARG}})
+                if(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+                    message(FATAL_ERROR "Keyword argument \"${ARG}\" given an invalid value: \"${LIST_ELEMENT}\". \n Choices: ${${ARG}-CHOICES}.")
+                endif(NOT (${LIST_ELEMENT} IN_LIST ${ARG}-CHOICES))
+            endforeach(LIST_ELEMENT ${_${ARG}})
+        endif(DEFINED ${ARG}-CHOICES)
+    endforeach(ARG ${MULTI_VALUE_ARGS})
 
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
