@@ -54,6 +54,8 @@ find build/packages/ -name "*\.deb" -exec sudo dpkg -i {} \;
 
 - Fix code coverage report generation using stdout redirection (see GnuCoverageConfig.cmake::GnuCoverage_setup_coverage_build_target). This will not work on windows platforms
 
+- Add support for failing builds when a certain code coverage percent (by line, and also by function) is not met.
+
 
 LOOK INTO:
 https://cmake.org/cmake/help/v3.21/cpack_gen/deb.html#cpack_gen:CPack%20DEB%20Generator
