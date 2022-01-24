@@ -1,6 +1,8 @@
 #!/bin/bash
 # Bash script to configure and test the project
 ABORT_ON_FAILURE="ON" # change this to continue running even when a test fails
+POST_TEST_CLEANUP="OFF" # Set to "ON" to remove the build directory of tests
+DEBUG_TESTS="OFF"       # Set to "ON" to enable a very verbose cmake configure and build output 
 
 WORKDIR=$(pwd)
 THIS_SCRIPT=$0
@@ -42,6 +44,11 @@ function run_test () {
     echo "EXPECT_RETURN_CODE:${EXPECT_RETURN_CODE}"
     echo "" # formatting
 
+    local CMAKE_TEST_LOG_LEVEL="notice"
+    if [ "${DEBUG_TESTS}" == "ON" ]; then
+        CMAKE_TEST_LOG_LEVEL="debug"
+    fi
+
     set -o pipefail # If you don't do this, tee will "succeed" despite the command being piped to it failing
     cmake \
         -S "${TESTCASE_CMAKE_SOURCE_DIR}" \
@@ -51,6 +58,7 @@ function run_test () {
         -DHEADER_FILE_DIR_ABSOLUTE=$(realpath ${WORKDIR}/tests/include) \
         -DTESTS_ROOT_DIR_ABSOLUTE=$(realpath ${WORKDIR}/tests) \
         --no-warn-unused-cli \
+        --log-level=${CMAKE_TEST_LOG_LEVEL} \
         | tee --append "${TEST_LOGFILE}" \
     && \
     cmake \
@@ -140,9 +148,10 @@ function run_test () {
         fi
     fi            
 
-    # If we get this far, the test has succeeded so we don't need the logs
-    rm "${TEST_LOGFILE}"
-    [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
+    if [ "${POST_TEST_CLEANUP}" == "ON" ]; then
+        [ -f "${TEST_LOGFILE}" ] && rm "${TEST_LOGFILE}"
+        [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
+    fi
     
 }
 
