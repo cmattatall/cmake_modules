@@ -657,6 +657,8 @@ function(GnuCoverage_add_report_target)
         message(FATAL_ERROR "Target: ${_TEST_RUNNER} does not exist!")
     endif(NOT TARGET ${_TEST_RUNNER} )
 
+    target_link_libraries(${_TEST_RUNNER} PRIVATE gcov)
+
 
     if(NOT DEFINED _COVERAGE_DIR)
         message(FATAL_ERROR "_COVERAGE_DIR not defined (\${_COVERAGE_DIR}:\"{_COVERAGE_DIR}\"")
@@ -665,7 +667,7 @@ function(GnuCoverage_add_report_target)
     if(NOT IS_DIRECTORY ${_COVERAGE_DIR})
         file(MAKE_DIRECTORY ${_COVERAGE_DIR})
     endif(NOT IS_DIRECTORY ${_COVERAGE_DIR})
-    
+
 
     # Get the full path to the test runner executable so we don't have 
     # to deal with working directory shenanigans in the custom targets.
