@@ -2,6 +2,34 @@
 
 A collection of cmake modules used for C and C++ projects
 
+
+# Modules
+
+This section contains a list of modules along with a brief description. 
+For specifics, usage examples, and more information, see the 
+`cmake/<MODULE>/README.md` subdirectory of a specific module.
+
+
+- TargetUtils - A collection of cmake functions for manipulating and printing targets
+- Packager    - The base module for the rest of the packaging modules - 
+- PackagerApi - The core module for creating multiple build packages in a single project
+- PackagerDeb - Used for creating debian packages from PackageApi packages
+- PackagerRpm - Used for creating rpm packages from PackageApi packages
+- PackagerTgz - Used for creating tarball + gunzip packages from PackageApi packages
+- PackagerZip - Used for creating zip packages from PackageApi packages
+- GnuCoverage - A framework for profiling, code coverage, and enforcing coverage requirements
+- GTestFramework - An enhanced and more user-friendly extension of the GoogleTest cmake module
+- GraphvizDocugen - A module 
+- GitMetadata - Used for embedding git and build metadata into sources
+
+- CppcheckAnalysis - WORK IN PROGRESS
+- ClangTidyAnalysis - WORK IN PROGRESS
+
+
+
+
+
+
 # Testing
 
 ```sh
