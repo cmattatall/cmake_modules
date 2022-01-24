@@ -129,6 +129,12 @@ macro(GnuCoverage_init)
         message( WARNING "Code coverage results with an optimized (non-Debug) build may be misleading" )
     endif() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 
+    if(TARGET GnuCoverage)
+        message(FATAL_ERROR "Target: \"GnuCoverage\" already exists!")
+    endif(TARGET GnuCoverage)
+
+    add_custom_target(GnuCoverage)
+
 endmacro(GnuCoverage_init)
 
 
@@ -850,6 +856,13 @@ function(GnuCoverage_add_report_target)
                     ${_COVERAGE_TARGET}-check
                     ${_COVERAGE_TARGET}-report
             )
+
+            # All the coverage reports and checks can be done with a call to `$ make GnuCoverage`
+            if(TARGET GnuCoverage)
+                add_dependencies(GnuCoverage ${_COVERAGE_TARGET})
+            else()
+                message(WARNING "Could not add target: ${_COVERAGE_TARGET} as dependency of target: GnuCoverage. Target \"GnuCoverage\" does not exist.")
+            endif(TARGET GnuCoverage)
 
         else()
             message(WARNING "${CMAKE_CURRENT_FUNCTION} currently does not support Apple systems. Code coverage will not be enforced.")
