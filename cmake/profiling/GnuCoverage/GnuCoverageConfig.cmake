@@ -765,15 +765,28 @@ function(GnuCoverage_add_report_target)
         file(MAKE_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR})
     endif(NOT IS_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR})
 
+    set(COVERAGE_REPORT_FILE "${COVERAGE_REPORT_OUTPUT_DIR}/index.html")
     add_custom_target(${_COVERAGE_TARGET}-report 
         ${COVERAGE_TARGET_BUILD_GROUP} # <--- This allows report generation at build time or as a custom target
         COMMAND ${GENHTML_EXECUTABLE} -o ${COVERAGE_REPORT_OUTPUT_DIR} ${COVERAGE_INFO_FILE_CLEANED}
+        COMMAND ${CMAKE_COMMAND} -E echo "Open ${COVERAGE_REPORT_OUTPUT_DIR}/index.html in your browswer to view the report!"
         COMMENT "Generating html code coverage report ..."
         DEPENDS ${_COVERAGE_TARGET}-clean
         WORKING_DIRECTORY ${COVERAGE_DIR}
         BYPRODUCTS ${COVERAGE_REPORT_FILE}
         USES_TERMINAL
     )
+
+    get_filename_component(COVERAGE_REPORT_OUTPUT_DIR_PARENT ${COVERAGE_REPORT_OUTPUT_DIR} DIRECTORY)
+    get_filename_component(COVERAGE_REPORT_OUTPUT_DIR_NAME ${COVERAGE_REPORT_OUTPUT_DIR} NAME)
+    file(WRITE "${COVERAGE_DIR}/report_compression.cmake" "file(ARCHIVE_CREATE OUTPUT report.zip PATHS ${COVERAGE_REPORT_OUTPUT_DIR_NAME} FORMAT zip VERBOSE)")
+    add_custom_command(
+        TARGET ${_COVERAGE_TARGET}-report
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -P "${COVERAGE_DIR}/report_compression.cmake"
+        COMMENT "Compressing coverage report ... "
+        WORKING_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR_PARENT}
+    )   
 
     # Enforce coverage checks
     if(UNIX)
