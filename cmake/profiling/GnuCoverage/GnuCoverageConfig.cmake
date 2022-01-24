@@ -779,12 +779,13 @@ function(GnuCoverage_add_report_target)
 
     get_filename_component(COVERAGE_REPORT_OUTPUT_DIR_PARENT ${COVERAGE_REPORT_OUTPUT_DIR} DIRECTORY)
     get_filename_component(COVERAGE_REPORT_OUTPUT_DIR_NAME ${COVERAGE_REPORT_OUTPUT_DIR} NAME)
-    file(WRITE "${COVERAGE_DIR}/report_compression.cmake" "file(ARCHIVE_CREATE OUTPUT report.zip PATHS ${COVERAGE_REPORT_OUTPUT_DIR_NAME} FORMAT zip VERBOSE)")
+    file(WRITE "${COVERAGE_DIR}/report_compression.cmake" "file(ARCHIVE_CREATE OUTPUT ${_COVERAGE_TARGET}-report.zip PATHS ${COVERAGE_REPORT_OUTPUT_DIR_NAME} FORMAT zip VERBOSE)")
     add_custom_command(
         TARGET ${_COVERAGE_TARGET}-report
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -P "${COVERAGE_DIR}/report_compression.cmake"
         COMMENT "Compressing coverage report ... "
+        BYPRODUCTS ${_COVERAGE_TARGET}-report.zip
         WORKING_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR_PARENT}
     )   
 
