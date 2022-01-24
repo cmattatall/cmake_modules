@@ -101,11 +101,12 @@
 macro(GnuCoverage_init)
     
     # Check prereqs
-    find_program( GCOV_EXE_PATH    gcov)
-    find_program( LCOV_EXE_PATH    lcov)
-    find_program( GENHTML_EXE_PATH genhtml)
-    find_program( GCOVR_EXE_PATH   gcovr PATHS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
-
+    find_program( GCOV_EXECUTABLE    gcov REQUIRED)
+    find_program( LCOV_EXECUTABLE    lcov REQUIRED)
+    find_program( GCOVR_GENHTML_EXECUTABLE genhtml REQUIRED)
+    #find_program( GCOVR_EXECUTABLE   gcovr PATHS ${CMAKE_CURRENT_SOURCE_DIR}/tests REQUIRED)
+    find_program( GCOVR_EXECUTABLE   gcovr REQUIRED)
+    find_program(PYTHON_EXECUTABLE NAMES python3 REQUIRED) 
 
     # TODO:
     #
@@ -114,13 +115,7 @@ macro(GnuCoverage_init)
     # 
     # Sadly, really haven't had time to get around to it yet
     # - ctm
-    find_program( CPPFILT_EXE_PATH NAMES c++filt) 
-
-
-
-    if(NOT GCOV_EXE_PATH)
-        message(FATAL_ERROR "gcov not found! Aborting...")
-    endif() # NOT GCOV_EXE_PATH
+    find_program( CPPFILT_EXECUTABLE NAMES c++filt) 
 
     if(NOT CMAKE_COMPILER_IS_GNUCXX)
         # Clang version 3.0.0 and greater now supports gcov as well.
@@ -131,42 +126,11 @@ macro(GnuCoverage_init)
         endif()
     endif() # NOT CMAKE_COMPILER_IS_GNUCXX
 
-    set(CMAKE_CXX_FLAGS_COVERAGE
-        "-g -O0 --coverage -fprofile-arcs -ftest-coverage"
-        CACHE STRING "Flags used by the C++ compiler during coverage builds."
-        FORCE 
-    )
-
-    set(CMAKE_C_FLAGS_COVERAGE
-        "-g -O0 --coverage -fprofile-arcs -ftest-coverage"
-        CACHE STRING "Flags used by the C compiler during coverage builds."
-        FORCE 
-    )
-
-    set(CMAKE_EXE_LINKER_FLAGS_COVERAGE
-        ""
-        CACHE STRING "Flags used for linking binaries during coverage builds."
-        FORCE 
-    )
-
-    set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE
-        ""
-        CACHE STRING "Flags used by the shared libraries linker during coverage builds."
-        FORCE 
-    )
-
-    mark_as_advanced(
-        CMAKE_CXX_FLAGS_COVERAGE
-        CMAKE_C_FLAGS_COVERAGE
-        CMAKE_EXE_LINKER_FLAGS_COVERAGE
-        CMAKE_SHARED_LINKER_FLAGS_COVERAGE 
-    )
-
     if ( NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
         message( WARNING "Code coverage results with an optimized (non-Debug) build may be misleading" )
     endif() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
-endmacro(GnuCoverage_init)
 
+endmacro(GnuCoverage_init)
 
 
 ################################################################################
@@ -185,7 +149,6 @@ endmacro(GnuCoverage_init)
 macro(GnuCoverage_remove_by_pattern pattern)
     set(LCOV_REMOVE "${LCOV_REMOVE};${pattern}")
 endmacro(GnuCoverage_remove_by_pattern pattern)
-
 
 
 ################################################################################
@@ -392,10 +355,15 @@ function(GnuCoverage_target_add_coverage_definitions)
         endif((CMAKE_BUILD_TYPE STREQUAL Release) OR (CMAKE_BUILD_TYPE STREQUAL MinSizeRel))
     endif(NOT CMAKE_BUILD_TYPE)
 
-    target_compile_options(${_TARGET} PRIVATE  -fprofile-arcs -ftest-coverage)
+    # For more information, see link below:
+    # https://gcc.gnu.org/onlinedocs/gcc-9.3.0/gcc/Instrumentation-Options.html
+    target_compile_options(${_TARGET} PRIVATE -fprofile-arcs)
+    target_compile_options(${_TARGET} PRIVATE -ftest-coverage)
+    target_compile_options(${_TARGET} PRIVATE -fprofile-abs-path)
+    target_compile_options(${_TARGET} PRIVATE --coverage)
+    target_link_libraries(${_TARGET} PUBLIC gcov)
 
 endfunction(GnuCoverage_target_add_coverage_definitions)
-
 
 
 ################################################################################
@@ -435,7 +403,6 @@ function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVE
 endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
 
 
-
 ################################################################################
 # @name: GnuCoverage_add_report_target
 #
@@ -449,6 +416,9 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 #   COVERAGE_FILENAME   coverage-report
 #   [ COVERAGE_DIR ] /my/coverage/directory/can/be/relative/or/absolute
 #   [ POST_BUILD ]
+#   [ MIN_LINE_PERCENT 50 ]
+#   [ MIN_FUNC_PERCENT 67 ]
+#   [ RUNNER_ARGS "--logging verbose --logfile foobar.log.txt" ] <-- important part is that the entire thing is quoted
 # )
 #
 # @param       COVERAGE_TARGET
@@ -460,6 +430,12 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 # @type        VALUE
 # @required    TRUE
 # @description The name of the executable cmake target that runs the tests
+#
+# @param       RUNNER_ARGS
+# @type        LIST
+# @required    FALSE
+# @description A quoted, internally-whitespace-delimited list of arguments 
+#              to pass to the test runner
 #
 # @param       COVERAGE_FILENAME
 # @type        VALUE
@@ -475,6 +451,18 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 # @type        OPTION
 # @required    FALSE
 # @description Option to automatically generate the coverage report post-build
+#
+# @param       MINIMUM_LINE_PERCENT
+# @type        VALUE
+# @required    FALSE
+# @description The minimum acceptable coverage percentage by line that will 
+#              pass the build
+#
+# @param       MINUMUM_FUNCTION_PERCENT
+# @type        VALUE
+# @required    FALSE
+# @description The minimum acceptable coverage percentage by function that will
+#              pass the build
 #       
 ################################################################################
 function(GnuCoverage_add_report_target)
@@ -501,6 +489,8 @@ function(GnuCoverage_add_report_target)
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
         COVERAGE_DIR
+        MIN_LINE_PERCENT
+        MIN_FUNC_PERCENT
     )
 
     ##########################
@@ -511,6 +501,7 @@ function(GnuCoverage_add_report_target)
     )
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
+        RUNNER_ARGS
     )
 
     ##########################
@@ -534,11 +525,9 @@ function(GnuCoverage_add_report_target)
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
-    if(_COVERAGE_DIR)
-        set(COVERAGE_DIR-DEFAULT ${_COVERAGE_DIR})
-    else()
-        set(COVERAGE_DIR-DEFAULT ${CMAKE_CURRENT_BINARY_DIR})
-    endif()
+    set(COVERAGE_DIR-DEFAULT "${CMAKE_CURRENT_BINARY_DIR}/coverage")
+    set(MIN_LINE_PERCENT-DEFAULT 50)
+    set(MIN_FUNC_PERCENT-DEFAULT 50)
 
     ############################################################################
     # Perform the argument parsing                                             #
@@ -664,30 +653,46 @@ function(GnuCoverage_add_report_target)
         message(FATAL_ERROR "Target: ${_TEST_RUNNER} does not exist!")
     endif(NOT TARGET ${_TEST_RUNNER} )
 
+
     if(NOT DEFINED _COVERAGE_DIR)
-        message(FATAL_ERROR "_COVERAGE_DIR not defined (\${_COVERAGE_DIR} == ${_COVERAGE_DIR}")
+        message(FATAL_ERROR "_COVERAGE_DIR not defined (\${_COVERAGE_DIR}:\"{_COVERAGE_DIR}\"")
+        return()
     endif(NOT DEFINED _COVERAGE_DIR)
+    if(NOT IS_DIRECTORY ${_COVERAGE_DIR})
+        file(MAKE_DIRECTORY ${_COVERAGE_DIR})
+    endif(NOT IS_DIRECTORY ${_COVERAGE_DIR})
     
+
+    # Get the full path to the test runner executable so we don't have 
+    # to deal with working directory shenanigans in the custom targets.
+    get_target_property(TEST_RUNNER_OUTPUT_DIR ${_TEST_RUNNER} BINARY_DIR )
+    if(${TEST_RUNNER_OUTPUT_DIR} STREQUAL TEST_RUNNER_OUTPUT_DIR-NOTFOUND)
+        message(FATAL_ERROR "Could not determine binary directory for target: ${_TEST_RUNNER}. Cannot determine an absolute path for the test runner executable ... Exiting!")
+        return() # Explicit return just in case.
+    endif(${TEST_RUNNER_OUTPUT_DIR} STREQUAL TEST_RUNNER_OUTPUT_DIR-NOTFOUND)
+
+    get_target_property(TEST_RUNNER_OUTPUT_NAME ${_TEST_RUNNER} OUTPUT_NAME)
+    if(TEST_RUNNER_OUTPUT_NAME STREQUAL TEST_RUNNER_OUTPUT_NAME-NOTFOUND)
+        # If it doesn't have the property, its output name will just be the target name.
+        set(TEST_RUNNER_OUTPUT_NAME ${_TEST_RUNNER}) 
+    endif(TEST_RUNNER_OUTPUT_NAME STREQUAL TEST_RUNNER_OUTPUT_NAME-NOTFOUND)
+    set(TEST_RUNNER_ABSPATH "${TEST_RUNNER_OUTPUT_DIR}/${TEST_RUNNER_OUTPUT_NAME}")
+
     target_link_libraries(${_TEST_RUNNER} PRIVATE gcov)
-    
 
-    if(NOT LCOV_EXE_PATH)
-        message(FATAL_ERROR "lcov not found! Aborting...")
-    endif(NOT LCOV_EXE_PATH) 
-
-    if(NOT GENHTML_EXE_PATH)
-        message(FATAL_ERROR "genhtml not found! Aborting...")
-    endif(NOT GENHTML_EXE_PATH)
+    # We can at least warn non-UNIX callers
+    if(NOT UNIX)
+        message(WARNING "Parsing test runner args : ${_RUNNER_ARGS} as a unix command. Parsing may fail due to your platform")
+    endif(NOT UNIX)
+    separate_arguments(PARSED_RUNNER_ARG_LIST UNIX_COMMAND "${_RUNNER_ARGS}")
 
     set(COVERAGE_INFO_FILE "${_COVERAGE_DIR}/${_COVERAGE_FILENAME}.info")
     set(COVERAGE_INFO_FILE_CLEANED "${COVERAGE_INFO_FILE}.cleaned")
 
-    separate_arguments(TEST_RUNNER_COMMAND UNIX_COMMAND "${_TEST_RUNNER}")
-
-    if(IS_DIRECTORY ${_COVERAGE_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/_deps/*)
-    endif(IS_DIRECTORY ${_COVERAGE_DIR}/_deps)
+    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/_deps)
+        list(APPEND LCOV_REMOVE ${CMAKE_CURRENT_BINARY_DIR}/_deps)
+        list(APPEND LCOV_REMOVE ${CMAKE_CURRENT_BINARY_DIR}/_deps/*)
+    endif(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/_deps)
 
     if(FETCHCONTENT_BASE_DIR)
         if(EXISTS ${FETCHCONTENT_BASE_DIR})
@@ -697,30 +702,88 @@ function(GnuCoverage_add_report_target)
         endif(EXISTS ${FETCHCONTENT_BASE_DIR})
     endif(FETCHCONTENT_BASE_DIR)
     
-
     if(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
         list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen)
         list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen/*)
     endif(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
 
 
-    find_program(PYTHON_EXECUTABLE NAMES python3)
-    if(NOT PYTHON_EXECUTABLE)
-        message(FATAL_ERROR "Python not found! Aborting...")
-    endif(NOT PYTHON_EXECUTABLE) 
+    set(COVERAGE_SUMMARY_FILE ${_COVERAGE_DIR}/coverage_summary.txt)
+    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/coverage_report.html)
+    message(DEBUG "COVERAGE_SUMMARY_FILE:${COVERAGE_SUMMARY_FILE}")
+    message(DEBUG "COVERAGE_REPORT_FILE:${COVERAGE_REPORT_FILE}")
 
-    if(NOT GCOVR_EXE_PATH)
-        message(FATAL_ERROR "gcovr not found! Aborting...")
-    endif(NOT GCOVR_EXE_PATH)
-
-    set(REPORT_SUMMARY_FILE ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/coverage_summary.txt)
-    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/coverage_report.html)
-
-    set(COVERAGE_CREATION_COMMENT "Resetting code coverage counters to zero.\n")
-    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}Processing code coverage counters and generating report.\n")
-    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}Open ${COVERAGE_REPORT_FILE} in your browser to view the coverage report.")
+    set(COVERAGE_CREATION_COMMENT "\n")
+    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- Resetting code coverage counters to zero ...\n- Done.\n")
+    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- Processing code coverage counters and generating report...\n- Done.\n")
+    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- To view the code coverage report in your browser, open ${COVERAGE_REPORT_FILE}.")
     
-    # Setup code coverage and profiling targets
+
+    set(LCOV_BASE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    add_custom_target(${_COVERAGE_TARGET}-reset
+        ${LCOV_EXECUTABLE} --base-directory ${LCOV_BASE_DIRECTORY} --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
+        COMMENT "Resetting code coverage execution counters ..."
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        USES_TERMINAL
+    )
+
+    add_custom_target(${_COVERAGE_TARGET}-execute
+        COMMAND ${TEST_RUNNER_ABSPATH} ${PARSED_RUNNER_ARG_LIST}
+        DEPENDS ${_TEST_RUNNER} ${_COVERAGE_TARGET}-reset
+        COMMENT "Launching test runner(s) ..."
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        USES_TERMINAL
+    )
+
+    # If we can find a way to index the .gcda files using cmake itself, 
+    # then we don't have to constantly maintain multi-platform search support
+    set(GCDA_SCRIPT "\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCDA_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcda\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE \${GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCDA_FILE} ${_COVERAGE_DIR}/\${GCDA_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE \${GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCNO_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcno\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE \${GCNO_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCNO_FILENAME \${GCNO_FILE} NAME)\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${_COVERAGE_DIR}/\${GCNO_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE \${GCNO_FILES})\n")
+    file(WRITE ${_COVERAGE_DIR}/gcda.cmake ${GCDA_SCRIPT})
+    add_custom_command(
+        TARGET ${_COVERAGE_TARGET}-execute
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -P ${_COVERAGE_DIR}/gcda.cmake
+    )
+
+    add_custom_target(${_COVERAGE_TARGET}-capture
+        COMMAND ${LCOV_EXECUTABLE} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE}
+        DEPENDS ${_COVERAGE_TARGET}-execute
+        COMMENT "Recording code paths traversed during execution of test runner ..."
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        USES_TERMINAL
+    )
+
+    add_custom_target(${_COVERAGE_TARGET}-clean
+        COMMAND ${LCOV_EXECUTABLE} --remove ${COVERAGE_INFO_FILE} ${LCOV_REMOVE}  '/usr/*' '${PROJECT_SOURCE_DIR}/tests/*'  --output-file ${COVERAGE_INFO_FILE_CLEANED}
+        DEPENDS ${_COVERAGE_TARGET}-capture
+        COMMENT "Removing excluded filepaths from the coverage report ..."
+        BYPRODUCTS ${COVERAGE_INFO_FILE_CLEANED}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        USES_TERMINAL
+    )
+
+    set(COVERAGE_SUMMARY_FILE_ABSPATH ${COVERAGE_SUMMARY_FILE})
+    add_custom_target(${_COVERAGE_TARGET}-summary
+        COMMAND ${LCOV_EXECUTABLE} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${COVERAGE_SUMMARY_FILE_ABSPATH}
+        DEPENDS ${_COVERAGE_TARGET}-clean
+        COMMENT "Generating code coverage summary file ..."
+        BYPRODUCTS ${COVERAGE_SUMMARY_FILE_ABSPATH}
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        USES_TERMINAL
+    )
+
+    # Configure the code coverage, profiling targets, and coverage check targets
     #
     # If we want to build the report as a post-build task,
     # add the custom target to the default build group so it is always built.
@@ -728,39 +791,69 @@ function(GnuCoverage_add_report_target)
     if(_POST_BUILD)
         set(COVERAGE_TARGET_SCOPE ALL) 
     endif(_POST_BUILD)
-    
-    add_custom_target(
-        ${_COVERAGE_TARGET} ${COVERAGE_TARGET_SCOPE}
-        ${LCOV_EXE_PATH} --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
-        COMMAND ${TEST_RUNNER_COMMAND}
 
-        # Capturing lcov counters and generating report
-        COMMAND ${LCOV_EXE_PATH} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE}  --exclude "\"${_COVERAGE_DIR}/*\""
-        COMMAND ${LCOV_EXE_PATH} --remove ${COVERAGE_INFO_FILE} ${LCOV_REMOVE}  '/usr/*' '${PROJECT_SOURCE_DIR}/tests/*' --output-file ${COVERAGE_INFO_FILE_CLEANED}
-        COMMAND ${GENHTML_EXE_PATH} -o ${_COVERAGE_FILENAME} ${COVERAGE_INFO_FILE_CLEANED}
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
-        COMMENT ${COVERAGE_CREATION_COMMENT}
-        USES_TERMINAL
-    )
-
-    add_custom_command(
-        TARGET ${_COVERAGE_TARGET}
-        POST_BUILD
-
-        # TODO: FIXME
-        # This is terrible because i/o redirection doesnt work on many platforms (e.g. Windows)
-        #                                                                |
-        #                                                                |
-        #                                                                v
-        COMMAND ${LCOV_EXE_PATH} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${REPORT_SUMMARY_FILE}
+    add_custom_target(${_COVERAGE_TARGET}-report ${COVERAGE_TARGET_SCOPE} 
+        COMMAND ${GENHTML_EXECUTABLE} -o ${_COVERAGE_FILENAME} ${COVERAGE_INFO_FILE_CLEANED}
         COMMAND ${CMAKE_COMMAND} -E rename ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/index.html ${COVERAGE_REPORT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
-        MAIN_DEPENDENCY ${COVERAGE_INFO_FILE_CLEANED}
-        DEPENDS ${COVERAGE_INFO_FILE_CLEANED} ${COVERAGE_INFO_FILE}
-        BYPRODUCTS ${REPORT_SUMMARY_FILE} ${COVERAGE_REPORT_FILE}
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
-        COMMENT "Performing post-build tasks for target \"${_COVERAGE_TARGET}\""
+        COMMENT "Generating html code coverage report"
+        DEPENDS ${_COVERAGE_TARGET}-clean
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        BYPRODUCTS ${COVERAGE_REPORT_FILE}
         USES_TERMINAL
     )
+
+
+    # Enforce coverage checks
+    if(UNIX)
+        if(NOT APPLE)
+
+            # TODO: FIX MEEE - this is suuuper disgusting and hacky
+            # We want to leverage something in cmake but it's REALLY hard to get cmake to execute arbitrary cmake code AFTER the configure stage...
+            find_program(GREP grep REQUIRED)
+            find_program(AWK  awk  REQUIRED)
+            find_program(CAT  cat  REQUIRED)
+            find_program(BASH bash REQUIRED)
+            find_program(SED  sed  REQUIRED)
+
+            math(EXPR MIN_LINE_PERCENT_EVALUATED ${_MIN_LINE_PERCENT})
+            set(LINE_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/line_coverage_check.sh")
+            set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass ( Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            file(WRITE ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} ${LINE_COVERAGE_CHECK_SCRIPT_CONTENT})
+            file(CHMOD ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} 
+                PERMISSIONS 
+                    OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_WRITE GROUP_READ
+                    WORLD_READ        
+            )
+
+            math(EXPR MIN_FUNC_PERCENT_EVALUATED ${_MIN_FUNC_PERCENT})
+            set(FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/function_coverage_check.sh")
+            set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass ( Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            file(WRITE ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} ${FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT})
+            file(CHMOD ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} 
+                PERMISSIONS 
+                    OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_WRITE GROUP_READ
+                    WORLD_READ        
+            )
+
+            add_custom_target(${_COVERAGE_TARGET}-check ALL
+                COMMAND ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH}
+                COMMAND ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH}
+                DEPENDS ${_COVERAGE_TARGET}-summary
+                COMMENT "Checking if code coverage requirements are met ... "
+                WORKING_DIRECTORY ${_COVERAGE_DIR}
+                USES_TERMINAL
+            )
+
+        else()
+            message(WARNING "${CMAKE_CURRENT_FUNCTION} currently does not support Apple systems. Code coverage will not be enforced.")
+            return()
+        endif(NOT APPLE)
+    else()
+        message(WARNING "${CMAKE_CURRENT_FUNCTION} currently does not support non-UNIX systems. Code coverage will not be enforced.")
+        return()
+    endif(UNIX)
     
 endfunction(GnuCoverage_add_report_target) 

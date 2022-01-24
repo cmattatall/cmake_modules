@@ -42,7 +42,8 @@ GnuCoverage_target_add_coverage_definitions(
     TARGET lib_to_profile
 )
 
-GnuCoverage_add_report_target(                                            
+GnuCoverage_add_report_target(               
+    #COVERAGE_TARGET     coverage
     TEST_RUNNER         test_runner                                        
     COVERAGE_FILENAME   coverage-report
     POST_BUILD                                                                                     

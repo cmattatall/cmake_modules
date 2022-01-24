@@ -39,7 +39,7 @@ target_link_libraries(test_runner PRIVATE lib_to_profile)
 
 
 GnuCoverage_target_add_coverage_definitions(
-    TARGET 
+    TARGET #lib_to_profile
 )
 
 GnuCoverage_add_report_target(                                            

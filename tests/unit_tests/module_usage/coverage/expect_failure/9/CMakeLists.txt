@@ -44,7 +44,8 @@ GnuCoverage_target_add_coverage_definitions(
 
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     coverage                                          
-    TEST_RUNNER         test_runner                                        
+    TEST_RUNNER         test_runner      
+    #COVERAGE_FILENAME   coverage-report
     POST_BUILD                                                                                     
 )   
 
