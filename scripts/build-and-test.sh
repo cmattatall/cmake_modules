@@ -148,7 +148,8 @@ function run_test () {
         fi
     fi            
 
-    if [ "${POST_TEST_CLEANUP}" == "ON" ]; then
+    if [ ${POST_TEST_CLEANUP} == "ON" ]; then
+        echo "Performing post-test cleanup for ${TEST_NAME} ..."
         [ -f "${TEST_LOGFILE}" ] && rm "${TEST_LOGFILE}"
         [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
     fi
