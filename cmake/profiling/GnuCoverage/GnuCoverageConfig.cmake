@@ -391,9 +391,10 @@ endfunction(GnuCoverage_target_add_coverage_definitions)
 #          MUST return ZERO always, even on errors.
 #          If not, no coverage report will be created!
 #
-# @param:  _COVERAGE_FILENAME (@type VALUE) (@required true)
-#          lcov output is generated as _COVERAGE_FILENAME.info
-#          HTML report is generated in _COVERAGE_FILENAME/index.html
+# @param  _COVERAGE_FILENAME (@type VALUE) (@required true)
+# @type   value
+# @required true
+# @description AN UNUSED PARAMETER. MAINTAINED FOR MAJOR VERSION 1 API BACKWARDS COMPATIBILITY
 #
 ################################################################################
 function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
@@ -401,7 +402,6 @@ function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVE
     GnuCoverage_add_report_target(
         COVERAGE_TARGET ${_targetname}
         TEST_RUNNER ${_testrunner} 
-        COVERAGE_FILENAME ${_COVERAGE_FILENAME} 
         ${ARGN}
     )
 endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
@@ -415,10 +415,8 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 #
 # @usage 
 # GnuCoverage_add_report_target(
-#   COVERAGE_TARGET     coverage
-#   TEST_RUNNER         my-test-runner
-#   COVERAGE_FILENAME   coverage-report
-#   [ COVERAGE_DIR ] /my/coverage/directory/can/be/relative/or/absolute
+#   COVERAGE_TARGET coverage
+#   TEST_RUNNER     my-test-runner
 #   [ POST_BUILD ]
 #   [ MIN_LINE_PERCENT 50 ]
 #   [ MIN_FUNC_PERCENT 67 ]
@@ -440,16 +438,6 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 # @required    FALSE
 # @description A quoted, internally-whitespace-delimited list of arguments 
 #              to pass to the test runner
-#
-# @param       COVERAGE_FILENAME
-# @type        VALUE
-# @required    TRUE
-# @description The name (without extension) of the coverage report output file
-#
-# @param       COVERAGE_DIR
-# @type        VALUE
-# @required    FALSE
-# @description The directory in which to generate the code coverage reports
 #
 # @param       POST_BUILD
 # @type        OPTION
@@ -488,11 +476,9 @@ function(GnuCoverage_add_report_target)
         # Add your argument keywords here
         COVERAGE_TARGET
         TEST_RUNNER
-        COVERAGE_FILENAME
     )
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
-        COVERAGE_DIR
         MIN_LINE_PERCENT
         MIN_FUNC_PERCENT
     )
@@ -529,9 +515,9 @@ function(GnuCoverage_add_report_target)
     # If we wanted to provide a default value for a keyword BAR,
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
-    set(COVERAGE_DIR-DEFAULT "${CMAKE_CURRENT_BINARY_DIR}/coverage")
     set(MIN_LINE_PERCENT-DEFAULT 50)
     set(MIN_FUNC_PERCENT-DEFAULT 50)
+
 
     ############################################################################
     # Perform the argument parsing                                             #
@@ -653,20 +639,21 @@ function(GnuCoverage_add_report_target)
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
 
+    if(_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Invalid arguments: ${_UNPARSED_ARGUMENTS} provided to ${CMAKE_CURRENT_FUNCTION}")
+    endif(_UNPARSED_ARGUMENTS)
+    
+
     if(NOT TARGET ${_TEST_RUNNER} )
         message(FATAL_ERROR "Target: ${_TEST_RUNNER} does not exist!")
     endif(NOT TARGET ${_TEST_RUNNER} )
 
     target_link_libraries(${_TEST_RUNNER} PRIVATE gcov)
 
-
-    if(NOT DEFINED _COVERAGE_DIR)
-        message(FATAL_ERROR "_COVERAGE_DIR not defined (\${_COVERAGE_DIR}:\"{_COVERAGE_DIR}\"")
-        return()
-    endif(NOT DEFINED _COVERAGE_DIR)
-    if(NOT IS_DIRECTORY ${_COVERAGE_DIR})
-        file(MAKE_DIRECTORY ${_COVERAGE_DIR})
-    endif(NOT IS_DIRECTORY ${_COVERAGE_DIR})
+    set(COVERAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/coverage)
+    if(NOT IS_DIRECTORY ${COVERAGE_DIR})
+        file(MAKE_DIRECTORY ${COVERAGE_DIR})
+    endif(NOT IS_DIRECTORY ${COVERAGE_DIR})
 
 
     # Get the full path to the test runner executable so we don't have 
@@ -690,15 +677,12 @@ function(GnuCoverage_add_report_target)
     endif(NOT UNIX)
     separate_arguments(PARSED_RUNNER_ARG_LIST UNIX_COMMAND "${_RUNNER_ARGS}")
 
-    set(COVERAGE_INFO_FILE "${_COVERAGE_DIR}/${_COVERAGE_FILENAME}.info")
-    set(COVERAGE_INFO_FILE_CLEANED "${COVERAGE_INFO_FILE}.cleaned")
+    set(COVERAGE_INFO_FILE "${COVERAGE_DIR}/coverage.info")
+    set(COVERAGE_INFO_FILE_CLEANED "${COVERAGE_DIR}/coverage.info.cleaned")
 
-    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${CMAKE_CURRENT_BINARY_DIR}/_deps)
-        list(APPEND LCOV_REMOVE ${CMAKE_CURRENT_BINARY_DIR}/_deps/*)
-    endif(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/_deps)
-
-    if(FETCHCONTENT_BASE_DIR)
+    # Disable profiling on third-party library sources
+    # https://cmake.org/cmake/help/latest/module/FetchContent.html
+    if(FETCHCONTENT_BASE_DIR) # <-- default value is ${CMAKE_BINARY_DIR}/_deps/
         if(EXISTS ${FETCHCONTENT_BASE_DIR})
             if(IS_DIRECTORY ${FETCHCONTENT_BASE_DIR})
                 list(APPEND LCOV_REMOVE ${FETCHCONTENT_BASE_DIR}/*)                
@@ -706,26 +690,11 @@ function(GnuCoverage_add_report_target)
         endif(EXISTS ${FETCHCONTENT_BASE_DIR})
     endif(FETCHCONTENT_BASE_DIR)
     
-    if(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
-        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen)
-        list(APPEND LCOV_REMOVE ${_COVERAGE_DIR}/codegen/*)
-    endif(IS_DIRECTORY ${_COVERAGE_DIR}/codegen)
 
-
-    set(COVERAGE_SUMMARY_FILE ${_COVERAGE_DIR}/coverage_summary.txt)
-    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/report/coverage_report.html)
-    message(DEBUG "COVERAGE_SUMMARY_FILE:${COVERAGE_SUMMARY_FILE}")
-    message(DEBUG "COVERAGE_REPORT_FILE:${COVERAGE_REPORT_FILE}")
-
-    set(COVERAGE_CREATION_COMMENT "\n")
-    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- Resetting code coverage counters to zero ...\n- Done.\n")
-    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- Processing code coverage counters and generating report...\n- Done.\n")
-    set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- To view the code coverage report in your browser, open ${COVERAGE_REPORT_FILE}.")
-    
     add_custom_target(${_COVERAGE_TARGET}-reset
-        ${LCOV_EXECUTABLE}  --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
+        ${LCOV_EXECUTABLE}  --directory ${COVERAGE_DIR} --zerocounters # Cleanup lcov
         COMMENT "Resetting code coverage execution counters ..."
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        WORKING_DIRECTORY ${COVERAGE_DIR}
         USES_TERMINAL
     )
 
@@ -733,7 +702,7 @@ function(GnuCoverage_add_report_target)
         COMMAND ${TEST_RUNNER_ABSPATH} ${PARSED_RUNNER_ARG_LIST}
         DEPENDS ${_TEST_RUNNER} ${_COVERAGE_TARGET}-reset
         COMMENT "Launching test runner(s) ..."
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        WORKING_DIRECTORY ${COVERAGE_DIR}
         USES_TERMINAL
     )
 
@@ -749,22 +718,22 @@ function(GnuCoverage_add_report_target)
     set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCDA_FILES \"${CMAKE_BINARY_DIR}/*\.gcda\")\n") 
     set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE \${GCDA_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCDA_FILE} ${_COVERAGE_DIR}/\${GCDA_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCDA_FILE} ${COVERAGE_DIR}/\${GCDA_FILENAME})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE \${GCDA_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCNO_FILES \"${CMAKE_BINARY_DIR}/*\.gcno\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE \${GCNO_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCNO_FILENAME \${GCNO_FILE} NAME)\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${_COVERAGE_DIR}/\${GCNO_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${COVERAGE_DIR}/\${GCNO_FILENAME})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE \${GCNO_FILES})\n")
-    file(WRITE ${_COVERAGE_DIR}/gcda.cmake ${GCDA_SCRIPT})
+    file(WRITE ${COVERAGE_DIR}/gcda.cmake ${GCDA_SCRIPT})
     add_custom_command(
         TARGET ${_COVERAGE_TARGET}-execute
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -P ${_COVERAGE_DIR}/gcda.cmake
+        COMMAND ${CMAKE_COMMAND} -P ${COVERAGE_DIR}/gcda.cmake
     )
 
     add_custom_target(${_COVERAGE_TARGET}-capture
-        COMMAND ${LCOV_EXECUTABLE} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE} --exclude "\"${PROJECT_BINARY_DIR}/*\""
+        COMMAND ${LCOV_EXECUTABLE} --directory ${COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE} --exclude "\"${PROJECT_BINARY_DIR}/*\""
         DEPENDS ${_COVERAGE_TARGET}-execute
         COMMENT "Recording code paths traversed during execution of test runner ..."
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -781,7 +750,7 @@ function(GnuCoverage_add_report_target)
     )
 
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], GENHTML_EXECUTABLE:${GENHTML_EXECUTABLE}")
-    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], _COVERAGE_DIR:${_COVERAGE_DIR}" )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], COVERAGE_DIR:${COVERAGE_DIR}" )
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], COVERAGE_INFO_FILE_CLEANED:${COVERAGE_INFO_FILE_CLEANED}" )
 
     set(COVERAGE_TARGET_BUILD_GROUP) # empty var
@@ -790,13 +759,18 @@ function(GnuCoverage_add_report_target)
     endif(_POST_BUILD)
 
 
-    get_filename_component(COVERAGE_REPORT_FILE_DIR ${COVERAGE_REPORT_FILE} DIRECTORY)
-    add_custom_target(${_COVERAGE_TARGET}-report ${COVERAGE_TARGET_BUILD_GROUP} # <--- This allows us to do the report generation at build time
-        COMMAND ${GENHTML_EXECUTABLE} -o ${COVERAGE_REPORT_FILE_DIR} ${COVERAGE_INFO_FILE_CLEANED}
-        COMMAND ${CMAKE_COMMAND} -E rename ${COVERAGE_REPORT_FILE_DIR}/index.html ${COVERAGE_REPORT_FILE}
+    set(COVERAGE_SUMMARY_FILE ${COVERAGE_DIR}/coverage_summary.txt)
+    set(COVERAGE_REPORT_OUTPUT_DIR ${COVERAGE_DIR}/report)
+    if(NOT IS_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR})
+        file(MAKE_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR})
+    endif(NOT IS_DIRECTORY ${COVERAGE_REPORT_OUTPUT_DIR})
+
+    add_custom_target(${_COVERAGE_TARGET}-report 
+        ${COVERAGE_TARGET_BUILD_GROUP} # <--- This allows report generation at build time or as a custom target
+        COMMAND ${GENHTML_EXECUTABLE} -o ${COVERAGE_REPORT_OUTPUT_DIR} ${COVERAGE_INFO_FILE_CLEANED}
         COMMENT "Generating html code coverage report ..."
         DEPENDS ${_COVERAGE_TARGET}-clean
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
+        WORKING_DIRECTORY ${COVERAGE_DIR}
         BYPRODUCTS ${COVERAGE_REPORT_FILE}
         USES_TERMINAL
     )
@@ -815,7 +789,7 @@ function(GnuCoverage_add_report_target)
             set(COVERAGE_SUMMARY_FILE_ABSPATH ${COVERAGE_SUMMARY_FILE})
 
             math(EXPR MIN_LINE_PERCENT_EVALUATED ${_MIN_LINE_PERCENT})
-            set(LINE_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/line_coverage_check.sh")
+            set(LINE_COVERAGE_CHECK_SCRIPT_ABSPATH "${COVERAGE_DIR}/line_coverage_check.sh")
             set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} ${LINE_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} 
@@ -826,7 +800,7 @@ function(GnuCoverage_add_report_target)
             )
 
             math(EXPR MIN_FUNC_PERCENT_EVALUATED ${_MIN_FUNC_PERCENT})
-            set(FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/function_coverage_check.sh")
+            set(FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH "${COVERAGE_DIR}/function_coverage_check.sh")
             set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} ${FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} 
@@ -844,7 +818,7 @@ function(GnuCoverage_add_report_target)
                 DEPENDS ${_COVERAGE_TARGET}-clean
                 COMMENT "Generating code coverage summary file and checking code coverage requirements ..."
                 BYPRODUCTS ${COVERAGE_SUMMARY_FILE_ABSPATH}
-                WORKING_DIRECTORY ${_COVERAGE_DIR}
+                WORKING_DIRECTORY ${COVERAGE_DIR}
                 USES_TERMINAL
             )
 

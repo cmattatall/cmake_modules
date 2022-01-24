@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+message(FATAL_ERROR "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt is an expected failure test template file")
+
+#[[
+
 if(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
     message(FATAL_ERROR "TESTS_ROOT_DIR_ABSOLUTE not defined") 
 endif(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
@@ -43,8 +47,10 @@ GnuCoverage_target_add_coverage_definitions(
 )
 
 GnuCoverage_add_report_target(                                            
-    COVERAGE_TARGET     coverage    
-    #TEST_RUNNER         test_runner                                        
+    COVERAGE_TARGET     coverage                                          
+    TEST_RUNNER         test_runner                                        
     POST_BUILD                                                                                     
 )   
 
+
+#]]

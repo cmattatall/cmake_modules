@@ -45,7 +45,8 @@ GnuCoverage_target_add_coverage_definitions(
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     coverage                                          
     TEST_RUNNER         test_runner      
-    #COVERAGE_FILENAME   coverage-report
-    POST_BUILD                                                                                     
+    OOOGABOOGA # <--- invalid argument
+    POST_BUILD
+    RUNNER_ARGS # runner_arg1 runner_arg2 # <--- invalid because the list is empty                                                                                     
 )   
 
