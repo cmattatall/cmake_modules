@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bash script to configure and test the project
 ABORT_ON_FAILURE="ON" # change this to continue running even when a test fails
-POST_TEST_CLEANUP="OFF" # Set to "ON" to remove the build directory of tests
+POST_TEST_CLEANUP="ON" # Set to "ON" to remove the build directory of tests
 DEBUG_TESTS="OFF"       # Set to "ON" to enable a very verbose cmake configure and build output 
 
 WORKDIR=$(pwd)
