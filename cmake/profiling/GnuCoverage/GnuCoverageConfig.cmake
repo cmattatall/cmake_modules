@@ -764,7 +764,7 @@ function(GnuCoverage_add_report_target)
     )
 
     add_custom_target(${_COVERAGE_TARGET}-capture
-        COMMAND ${LCOV_EXECUTABLE} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE} --exclude ${PROJECT_BINARY_DIR}/*
+        COMMAND ${LCOV_EXECUTABLE} --directory ${_COVERAGE_DIR} --capture --output-file ${COVERAGE_INFO_FILE} --exclude "\"${PROJECT_BINARY_DIR}/*\""
         DEPENDS ${_COVERAGE_TARGET}-execute
         COMMENT "Recording code paths traversed during execution of test runner ..."
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
