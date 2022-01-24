@@ -398,7 +398,12 @@ endfunction(GnuCoverage_target_add_coverage_definitions)
 ################################################################################
 function(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
     message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Use GnuCoverage_add_report_target")
-    GnuCoverage_setup_coverage_build_target(${_targetname} ${_testrunner} ${_COVERAGE_FILENAME} ${ARGN})
+    GnuCoverage_add_report_target(
+        COVERAGE_TARGET ${_targetname}
+        TEST_RUNNER ${_testrunner} 
+        COVERAGE_FILENAME ${_COVERAGE_FILENAME} 
+        ${ARGN}
+    )
 endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _COVERAGE_FILENAME)
 
 
