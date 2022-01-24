@@ -784,14 +784,14 @@ function(GnuCoverage_add_report_target)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], _COVERAGE_DIR:${_COVERAGE_DIR}" )
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], COVERAGE_INFO_FILE_CLEANED:${COVERAGE_INFO_FILE_CLEANED}" )
 
-    set(REPORT_BUILD_GROUP) # empty var
+    set(COVERAGE_TARGET_BUILD_GROUP) # empty var
     if(_POST_BUILD)
-        set(REPORT_BUILD_GROUP ALL)
+        set(COVERAGE_TARGET_BUILD_GROUP ALL)
     endif(_POST_BUILD)
 
 
     get_filename_component(COVERAGE_REPORT_FILE_DIR ${COVERAGE_REPORT_FILE} DIRECTORY)
-    add_custom_target(${_COVERAGE_TARGET}-report ${REPORT_BUILD_GROUP} # <--- This allows us to do the report generation at build time
+    add_custom_target(${_COVERAGE_TARGET}-report ${COVERAGE_TARGET_BUILD_GROUP} # <--- This allows us to do the report generation at build time
         COMMAND ${GENHTML_EXECUTABLE} -o ${COVERAGE_REPORT_FILE_DIR} ${COVERAGE_INFO_FILE_CLEANED}
         COMMAND ${CMAKE_COMMAND} -E rename ${COVERAGE_REPORT_FILE_DIR}/index.html ${COVERAGE_REPORT_FILE}
         COMMENT "Generating html code coverage report ..."
@@ -836,7 +836,7 @@ function(GnuCoverage_add_report_target)
                     WORLD_READ        
             )
 
-            add_custom_target(${_COVERAGE_TARGET}-check ALL
+            add_custom_target(${_COVERAGE_TARGET}-check ${COVERAGE_TARGET_BUILD_GROUP}
                 COMMAND ${LCOV_EXECUTABLE} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${COVERAGE_SUMMARY_FILE_ABSPATH}
                 COMMAND ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH}
                 COMMAND ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH}
@@ -856,6 +856,12 @@ function(GnuCoverage_add_report_target)
             #   The easiest way to do that is with a direct dependency.
             add_dependencies(${_COVERAGE_TARGET}-check ${_COVERAGE_TARGET}-report)
 
+            add_custom_target(${_COVERAGE_TARGET} ${COVERAGE_TARGET_BUILD_GROUP}
+                COMMENT "Making code coverage target ... "
+                DEPENDS 
+                    ${_COVERAGE_TARGET}-check
+                    ${_COVERAGE_TARGET}-report
+            )
 
         else()
             message(WARNING "${CMAKE_CURRENT_FUNCTION} currently does not support Apple systems. Code coverage will not be enforced.")
