@@ -677,8 +677,6 @@ function(GnuCoverage_add_report_target)
     endif(TEST_RUNNER_OUTPUT_NAME STREQUAL TEST_RUNNER_OUTPUT_NAME-NOTFOUND)
     set(TEST_RUNNER_ABSPATH "${TEST_RUNNER_OUTPUT_DIR}/${TEST_RUNNER_OUTPUT_NAME}")
 
-    target_link_libraries(${_TEST_RUNNER} PRIVATE gcov)
-
     # We can at least warn non-UNIX callers
     if(NOT UNIX)
         message(WARNING "Parsing test runner args : ${_RUNNER_ARGS} as a unix command. Parsing may fail due to your platform")
