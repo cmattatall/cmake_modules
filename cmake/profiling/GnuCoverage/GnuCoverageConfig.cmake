@@ -78,8 +78,8 @@
 #    $ cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug && cmake --build build     #
 #                                                                              #
 # 9. Make the coverage report. Not required if POST_BUILD is specified.        #
-#    $cd build                                                                 #
-#    $ make coverage                                                           #
+#    $ cd build                                                                #
+#    $ make coverage-report                                                    #
 #                                                                              #
 ################################################################################
 
@@ -739,14 +739,19 @@ function(GnuCoverage_add_report_target)
 
     # If we can find a way to index the .gcda files using cmake itself, 
     # then we don't have to constantly maintain multi-platform search support
+    #
+    # Note:
+    # - We explicitly do not use CMAKE_CURRENT_BINARY_DIR when searching
+    #       - it doesnt work in many cases depending on where the targets 
+    #         that TEST_RUNNER has been linked against are defined/declared
     set(GCDA_SCRIPT "\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCDA_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcda\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCDA_FILES \"${CMAKE_BINARY_DIR}/*\.gcda\")\n") 
     set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE \${GCDA_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCDA_FILE} ${_COVERAGE_DIR}/\${GCDA_FILENAME})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE \${GCDA_FILES})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCNO_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcno\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCNO_FILES \"${CMAKE_BINARY_DIR}/*\.gcno\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE \${GCNO_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCNO_FILENAME \${GCNO_FILE} NAME)\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${_COVERAGE_DIR}/\${GCNO_FILENAME})\n")
