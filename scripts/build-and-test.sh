@@ -142,7 +142,7 @@ function run_test () {
 
     # If we get this far, the test has succeeded so we don't need the logs
     rm "${TEST_LOGFILE}"
-    [ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
+    #[ -d "${TESTCASE_CMAKE_BUILD_DIR}" ] && rm -rf "${TESTCASE_CMAKE_BUILD_DIR}"
     
 }
 
@@ -157,7 +157,9 @@ function run_tests () {
     [ ! -d "${TEST_LOGGING_DIR}" ] && mkdir -p "${TEST_LOGGING_DIR}"
 
     set +e
-    for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
+    #for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
+    for cmakelists in /home/carl/Desktop/personal/cmake_modules/tests/unit_tests/module_usage/coverage/expect_failure/10/CMakeLists.txt; do
+    
         local TESTCASE_CMAKE_SOURCE_DIR=$(dirname ${cmakelists})
         local TESTCASE_CMAKE_BUILD_DIR="${TESTCASE_CMAKE_SOURCE_DIR}/build"
 

@@ -101,12 +101,11 @@
 macro(GnuCoverage_init)
     
     # Check prereqs
-    find_program( GCOV_EXECUTABLE    gcov REQUIRED)
-    find_program( LCOV_EXECUTABLE    lcov REQUIRED)
-    find_program( GCOVR_GENHTML_EXECUTABLE genhtml REQUIRED)
-    #find_program( GCOVR_EXECUTABLE   gcovr PATHS ${CMAKE_CURRENT_SOURCE_DIR}/tests REQUIRED)
-    find_program( GCOVR_EXECUTABLE   gcovr REQUIRED)
-    find_program(PYTHON_EXECUTABLE NAMES python3 REQUIRED) 
+    find_program(GCOV_EXECUTABLE    gcov    REQUIRED)
+    find_program(LCOV_EXECUTABLE    lcov    REQUIRED)
+    find_program(GENHTML_EXECUTABLE genhtml REQUIRED)
+    find_program(GCOVR_EXECUTABLE   gcovr   REQUIRED)
+    find_program(PYTHON_EXECUTABLE  python3 REQUIRED) 
 
     # TODO:
     #
@@ -709,7 +708,7 @@ function(GnuCoverage_add_report_target)
 
 
     set(COVERAGE_SUMMARY_FILE ${_COVERAGE_DIR}/coverage_summary.txt)
-    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/coverage_report.html)
+    set(COVERAGE_REPORT_FILE ${_COVERAGE_DIR}/report/coverage_report.html)
     message(DEBUG "COVERAGE_SUMMARY_FILE:${COVERAGE_SUMMARY_FILE}")
     message(DEBUG "COVERAGE_REPORT_FILE:${COVERAGE_REPORT_FILE}")
 
@@ -718,10 +717,8 @@ function(GnuCoverage_add_report_target)
     set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- Processing code coverage counters and generating report...\n- Done.\n")
     set(COVERAGE_CREATION_COMMENT "${COVERAGE_CREATION_COMMENT}- To view the code coverage report in your browser, open ${COVERAGE_REPORT_FILE}.")
     
-
-    set(LCOV_BASE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_target(${_COVERAGE_TARGET}-reset
-        ${LCOV_EXECUTABLE} --base-directory ${LCOV_BASE_DIRECTORY} --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
+        ${LCOV_EXECUTABLE}  --directory ${_COVERAGE_DIR} --zerocounters # Cleanup lcov
         COMMENT "Resetting code coverage execution counters ..."
         WORKING_DIRECTORY ${_COVERAGE_DIR}
         USES_TERMINAL
@@ -773,36 +770,26 @@ function(GnuCoverage_add_report_target)
         USES_TERMINAL
     )
 
-    set(COVERAGE_SUMMARY_FILE_ABSPATH ${COVERAGE_SUMMARY_FILE})
-    add_custom_target(${_COVERAGE_TARGET}-summary
-        COMMAND ${LCOV_EXECUTABLE} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${COVERAGE_SUMMARY_FILE_ABSPATH}
-        DEPENDS ${_COVERAGE_TARGET}-clean
-        COMMENT "Generating code coverage summary file ..."
-        BYPRODUCTS ${COVERAGE_SUMMARY_FILE_ABSPATH}
-        WORKING_DIRECTORY ${_COVERAGE_DIR}
-        USES_TERMINAL
-    )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], GENHTML_EXECUTABLE:${GENHTML_EXECUTABLE}")
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], _COVERAGE_DIR:${_COVERAGE_DIR}" )
+    message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION} ], COVERAGE_INFO_FILE_CLEANED:${COVERAGE_INFO_FILE_CLEANED}" )
 
-    # Configure the code coverage, profiling targets, and coverage check targets
-    #
-    # If we want to build the report as a post-build task,
-    # add the custom target to the default build group so it is always built.
-    set(COVERAGE_TARGET_SCOPE "")
+    set(REPORT_BUILD_GROUP) # empty var
     if(_POST_BUILD)
-        set(COVERAGE_TARGET_SCOPE ALL) 
+        set(REPORT_BUILD_GROUP ALL)
     endif(_POST_BUILD)
 
-    add_custom_target(${_COVERAGE_TARGET}-report ${COVERAGE_TARGET_SCOPE} 
-        COMMAND ${GENHTML_EXECUTABLE} -o ${_COVERAGE_FILENAME} ${COVERAGE_INFO_FILE_CLEANED}
-        COMMAND ${CMAKE_COMMAND} -E rename ${_COVERAGE_DIR}/${_COVERAGE_FILENAME}/index.html ${COVERAGE_REPORT_FILE}
-        COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
-        COMMENT "Generating html code coverage report"
+
+    get_filename_component(COVERAGE_REPORT_FILE_DIR ${COVERAGE_REPORT_FILE} DIRECTORY)
+    add_custom_target(${_COVERAGE_TARGET}-report ${REPORT_BUILD_GROUP} # <--- This allows us to do the report generation at build time
+        COMMAND ${GENHTML_EXECUTABLE} -o ${COVERAGE_REPORT_FILE_DIR} ${COVERAGE_INFO_FILE_CLEANED}
+        COMMAND ${CMAKE_COMMAND} -E rename ${COVERAGE_REPORT_FILE_DIR}/index.html ${COVERAGE_REPORT_FILE}
+        COMMENT "Generating html code coverage report ..."
         DEPENDS ${_COVERAGE_TARGET}-clean
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        WORKING_DIRECTORY ${_COVERAGE_DIR}
         BYPRODUCTS ${COVERAGE_REPORT_FILE}
         USES_TERMINAL
     )
-
 
     # Enforce coverage checks
     if(UNIX)
@@ -815,10 +802,11 @@ function(GnuCoverage_add_report_target)
             find_program(CAT  cat  REQUIRED)
             find_program(BASH bash REQUIRED)
             find_program(SED  sed  REQUIRED)
+            set(COVERAGE_SUMMARY_FILE_ABSPATH ${COVERAGE_SUMMARY_FILE})
 
             math(EXPR MIN_LINE_PERCENT_EVALUATED ${_MIN_LINE_PERCENT})
             set(LINE_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/line_coverage_check.sh")
-            set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass ( Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} ${LINE_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} 
                 PERMISSIONS 
@@ -829,7 +817,7 @@ function(GnuCoverage_add_report_target)
 
             math(EXPR MIN_FUNC_PERCENT_EVALUATED ${_MIN_FUNC_PERCENT})
             set(FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH "${_COVERAGE_DIR}/function_coverage_check.sh")
-            set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass ( Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} ${FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} 
                 PERMISSIONS 
@@ -839,13 +827,25 @@ function(GnuCoverage_add_report_target)
             )
 
             add_custom_target(${_COVERAGE_TARGET}-check ALL
+                COMMAND ${LCOV_EXECUTABLE} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${COVERAGE_SUMMARY_FILE_ABSPATH}
                 COMMAND ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH}
                 COMMAND ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH}
-                DEPENDS ${_COVERAGE_TARGET}-summary
-                COMMENT "Checking if code coverage requirements are met ... "
+                COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
+                DEPENDS ${_COVERAGE_TARGET}-clean
+                COMMENT "Generating code coverage summary file and checking code coverage requirements ..."
+                BYPRODUCTS ${COVERAGE_SUMMARY_FILE_ABSPATH}
                 WORKING_DIRECTORY ${_COVERAGE_DIR}
                 USES_TERMINAL
             )
+
+            # Technically, not a dependency 
+            # - BUT since we could be executing in a post-build context, the coverage check
+            #   target can fail the build. This means that we must ensure the report gets 
+            #   built BEFORE the coverage check is performed. 
+            # 
+            #   The easiest way to do that is with a direct dependency.
+            add_dependencies(${_COVERAGE_TARGET}-check ${_COVERAGE_TARGET}-report)
+
 
         else()
             message(WARNING "${CMAKE_CURRENT_FUNCTION} currently does not support Apple systems. Code coverage will not be enforced.")

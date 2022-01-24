@@ -50,5 +50,5 @@ GnuCoverage_add_report_target(
     COVERAGE_TARGET     coverage                                          
     TEST_RUNNER         test_runner
     COVERAGE_FILENAME   coverage-report                                        
-    #POST_BUILD                                                                                     
+    POST_BUILD                                                                                     
 )   
