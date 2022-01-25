@@ -37,7 +37,7 @@ pkg_check_modules(JSONCPP jsoncpp REQUIRED)
 
 
 PackagerApi_add_package(
-    PACKAGE
+    PACKAGE # ${PROJECT_NAME}  # missing value for required KWARG
     VERSION ${PROJECT_VERSION}    
 )
 
