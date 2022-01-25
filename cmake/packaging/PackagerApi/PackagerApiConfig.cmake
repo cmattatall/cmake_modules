@@ -1820,15 +1820,35 @@ function(PackagerApi_target_headers)
         get_filename_component(HEADER_BUILD_DIR_NAME ${HEADER_BUILD_DIR} NAME)
         get_filename_component(HEADER_INSTALL_DIR_NAME ${PACKAGE_HEADER_FILE_INSTALL_DIR} NAME)
         
-        message(DEBUG "HEADER_BUILD_DIR:${HEADER_BUILD_DIR}")
+        message(WARNING "HEADER_BUILD_DIR:${HEADER_BUILD_DIR}")
         message(DEBUG "HEADER_BUILD_DIR_NAME:${HEADER_BUILD_DIR_NAME}")
         message(DEBUG "HEADER_INSTALL_DIR_NAME:${HEADER_INSTALL_DIR_NAME}")
 
         if(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
+        # This handles the case wherein the headers are in a directory such as 
+        # ${CMAKE_CURRENT_SOURCE_DIR}/include/lib.hpp and the source files have
+        # #include directives that reference the __ HEADER INSTALL LOCATION __
+        # e.g. 
+        # #include "package_name/lib.hpp"
+
             file(COPY ${HEADER_FILE} DESTINATION ${PACKAGE_HEADER_FILES_STAGING_DIR})
             target_include_directories(${_TARGET} 
-                PUBLIC 
+                PRIVATE
                     $<BUILD_INTERFACE:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}>
+            )
+
+        else()
+
+        # This handles the case wherein the headers are in a directory such as
+        # ${CMAKE_CURRENT_SOURCE_DIR}/include/package_name/lib.hpp and the 
+        # source files have 
+        # #include directives that reference the __ HEADER BUILD LOCATION __
+        # e.g. 
+        # #include "lib.hpp"
+
+            target_include_directories(${_TARGET} 
+                PRIVATE
+                    $<BUILD_INTERFACE:${HEADER_BUILD_DIR}>
             )
         endif(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
 

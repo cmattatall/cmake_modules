@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.20)
+
+if(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
+    message(FATAL_ERROR "TESTS_ROOT_DIR_ABSOLUTE not defined") 
+endif(NOT DEFINED TESTS_ROOT_DIR_ABSOLUTE)
+
+# We will use the directory structure to create a unique name for this test
+file(RELATIVE_PATH TEST_SOURCE_DIR_RELATIVE ${TESTS_ROOT_DIR_ABSOLUTE} ${CMAKE_CURRENT_SOURCE_DIR})
+file(TO_CMAKE_PATH ${TEST_SOURCE_DIR_RELATIVE} TEST_PROJECT_NAME)
+string(REPLACE "/" "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE "\\ " "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE " " "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+string(REPLACE "\t" "_" TEST_PROJECT_NAME ${TEST_PROJECT_NAME})
+project(
+    ${TEST_PROJECT_NAME}
+    VERSION 0.1.2
+    LANGUAGES C CXX
+)
+
+
+# FIND PACKAGES 
+find_package(PackagerApi REQUIRED)
+
+set(PACKAGE_NAME package_api_pkg_include_directories_test)
+set(TARGET_NAME ${PACKAGE_NAME})
+
+PackagerApi_add_package(
+    PACKAGE ${PACKAGE_NAME}
+    VERSION ${PROJECT_VERSION}    
+)
+
+PackagerApi_add_library(
+    PACKAGE ${PACKAGE_NAME}
+    TARGET  ${TARGET_NAME}
+)
+
+PackagerApi_target_headers(
+    PACKAGE ${PACKAGE_NAME}
+    TARGET  ${TARGET_NAME}
+    HEADERS include/package_api_pkg_include_directories_test/lib.hpp # Expect success when a path relative to CMAKE_CURRENT_SOURCE_DIR is given
+)
+
+
+# KEEP THIS HERE FOR DEBUGGING
+#[[
+get_target_property(INCLUDE_DIRS ${TARGET_NAME} INCLUDE_DIRECTORIES)
+message(WARNING "INCLUDE_DIRS:${INCLUDE_DIRS}")
+get_target_property(INTERFACE_INCLUDE_DIRS ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+message(WARNING "INTERFACE_INCLUDE_DIRS:${INTERFACE_INCLUDE_DIRS}")
+#]]
+
+target_sources(${TARGET_NAME} PRIVATE src/lib.cpp)
+
+PackagerApi_finalize_config()
