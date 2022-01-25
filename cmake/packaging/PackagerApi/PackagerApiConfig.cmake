@@ -1820,7 +1820,7 @@ function(PackagerApi_target_headers)
         get_filename_component(HEADER_BUILD_DIR_NAME ${HEADER_BUILD_DIR} NAME)
         get_filename_component(HEADER_INSTALL_DIR_NAME ${PACKAGE_HEADER_FILE_INSTALL_DIR} NAME)
         
-        message(WARNING "HEADER_BUILD_DIR:${HEADER_BUILD_DIR}")
+        message(DEBUG "HEADER_BUILD_DIR:${HEADER_BUILD_DIR}")
         message(DEBUG "HEADER_BUILD_DIR_NAME:${HEADER_BUILD_DIR_NAME}")
         message(DEBUG "HEADER_INSTALL_DIR_NAME:${HEADER_INSTALL_DIR_NAME}")
 
