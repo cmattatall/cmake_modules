@@ -283,6 +283,22 @@ function(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENC
 endfunction(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPENDENCY_NAME)
 
 
+
+function(PackagerApi_target_include_directories)
+    target_include_directories(${ARGN})
+endfunction(PackagerApi_target_include_directories)
+
+
+function(PackageApi_target_sources)
+    target_sources(${ARGN})
+endfunction(PackageApi_target_sources)
+
+
+function(PackageApi_target_link_libraries)
+    target_link_libraries(${ARGN})
+endfunction(PackageApi_target_link_libraries)
+
+
 ################################################################################
 # THIS MUST BE CALLED LAST IN THE TOP-LEVEL CMAKELISTS.TXT                     #
 ################################################################################
@@ -862,7 +878,7 @@ function(PackagerApi_add_library)
                         get_target_property(INHERITED_INTERFACE_INCLUDE_DIRECTORIES ${OBJECT_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
                         message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
                         if(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
-                            target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
+                            PackagerApi_target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
                         else()
                             message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_INCLUDE_DIRECTORIES")
                         endif(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
@@ -870,7 +886,7 @@ function(PackagerApi_add_library)
                         get_target_property(INHERITED_INTERFACE_LINK_LIBRARIES ${OBJECT_TARGET_NAME} INTERFACE_LINK_LIBRARIES)
                         message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
                         if(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
-                            target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                            PackagerApi_target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
                         else()
                             message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_LINK_LIBRARIES")
                         endif(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
@@ -917,7 +933,7 @@ function(PackagerApi_add_library)
         # After the target is installed, if another project or target imports it
         # the header directories will have to be searched for in the 
         # system install tree and not the current build tree
-        target_include_directories(${_TARGET} 
+        PackagerApi_target_include_directories(${_TARGET} 
             PUBLIC
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_INSTALL_DIR}>
         )
@@ -1490,7 +1506,7 @@ function(PackagerApi_add_executable)
                         get_target_property(INHERITED_INTERFACE_INCLUDE_DIRECTORIES ${OBJECT_TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
                         message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_INCLUDE_DIRECTORIES:${INHERITED_INTERFACE_INCLUDE_DIRECTORIES} from target ${OBJECT_TARGET_NAME}")
                         if(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
-                            target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
+                            PackagerApi_target_include_directories(${_TARGET} PUBLIC ${INHERITED_INTERFACE_INCLUDE_DIRECTORIES})
                         else()
                             message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_INCLUDE_DIRECTORIES")
                         endif(NOT (INHERITED_INTERFACE_INCLUDE_DIRECTORIES STREQUAL "INHERITED_INTERFACE_INCLUDE_DIRECTORIES-NOTFOUND"))
@@ -1498,7 +1514,7 @@ function(PackagerApi_add_executable)
                         get_target_property(INHERITED_INTERFACE_LINK_LIBRARIES ${OBJECT_TARGET_NAME} INTERFACE_LINK_LIBRARIES)
                         message(VERBOSE "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET: ${_TARGET} INHERITED_INTERFACE_LINK_LIBRARIES:${INHERITED_INTERFACE_LINK_LIBRARIES} from target ${OBJECT_TARGET_NAME}")                        
                         if(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
-                            target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
+                            PackagerApi_target_link_libraries(${_TARGET} PUBLIC ${INHERITED_INTERFACE_LINK_LIBRARIES})
                         else()
                             message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], target: ${OBJECT_TARGET_NAME} does not have property INTERFACE_LINK_LIBRARIES")
                         endif(NOT (INHERITED_INTERFACE_LINK_LIBRARIES STREQUAL "INHERITED_INTERFACE_LINK_LIBRARIES-NOTFOUND"))
@@ -1832,7 +1848,7 @@ function(PackagerApi_target_headers)
         # #include "package_name/lib.hpp"
 
             file(COPY ${HEADER_FILE} DESTINATION ${PACKAGE_HEADER_FILES_STAGING_DIR})
-            target_include_directories(${_TARGET} 
+            PackagerApi_target_include_directories(${_TARGET} 
                 PRIVATE
                     $<BUILD_INTERFACE:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}>
             )
@@ -1846,7 +1862,7 @@ function(PackagerApi_target_headers)
         # e.g. 
         # #include "lib.hpp"
 
-            target_include_directories(${_TARGET} 
+            PackagerApi_target_include_directories(${_TARGET} 
                 PRIVATE
                     $<BUILD_INTERFACE:${HEADER_BUILD_DIR}>
             )
@@ -1858,7 +1874,7 @@ function(PackagerApi_target_headers)
             set(BUILD_INTERFACE_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${HEADER_BUILD_DIR}")
         endif(IS_ABSOLUTE ${HEADER_BUILD_DIR})
         
-        target_include_directories(${_TARGET} 
+        PackagerApi_target_include_directories(${_TARGET} 
             PUBLIC 
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR}>
         )
@@ -1873,13 +1889,16 @@ function(PackagerApi_target_headers)
     list(REMOVE_DUPLICATES BUILD_INTERFACE_INCLUDEDIRS)
 
     foreach(INCLUDEDIR ${BUILD_INTERFACE_INCLUDEDIRS})
-        target_include_directories(${_TARGET} 
+        PackagerApi_target_include_directories(${_TARGET} 
             PUBLIC 
                 $<BUILD_INTERFACE:${INCLUDEDIR}>
         )
     endforeach(INCLUDEDIR ${BUILD_INTERFACE_INCLUDEDIRS})
 
 endfunction(PackagerApi_target_headers)
+
+
+
 
 
 ################################################################################
