@@ -21,31 +21,26 @@ project(
 # FIND PACKAGES 
 find_package(PackagerApi REQUIRED)
 
-
-if(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
-    message(FATAL_ERROR "SOURCE_CODE_DIR_ABSOLUTE not defined")
-endif(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
-
-if(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
-    message(FATAL_ERROR "HEADER_FILE_DIR_ABSOLUTE not defined") 
-endif(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
-
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp REQUIRED)
-
+set(PACKAGE_NAME package_api_pkg_include_directories_test)
+set(TARGET_NAME ${PACKAGE_NAME})
 
 PackagerApi_add_package(
-    PACKAGE ${PROJECT_NAME}
+    PACKAGE ${PACKAGE_NAME}
     VERSION ${PROJECT_VERSION}    
 )
 
-
 PackagerApi_add_library(
-    PACKAGE ${PROJECT_NAME}  
-    TARGET lib_with_direct_sources_type_shared
-    TARGET_TYPE SHARED
-    ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp
+    PACKAGE ${PACKAGE_NAME}
+    TARGET  ${TARGET_NAME}
 )
+
+PackagerApi_target_headers(
+    PACKAGE ${PACKAGE_NAME}
+    TARGET  ${TARGET_NAME}
+    HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/include/lib.hpp # Expect success when an absolute path is given
+)
+
+
+target_sources(${TARGET_NAME} PRIVATE src/lib.cpp)
 
 PackagerApi_finalize_config()

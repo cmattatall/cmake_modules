@@ -49,3 +49,6 @@ PackagerApi_add_executable(
 )
 
 target_sources(single_main_executable PUBLIC ${SOURCE_CODE_DIR_ABSOLUTE}/single_main.cpp )
+
+
+PackagerApi_finalize_config()

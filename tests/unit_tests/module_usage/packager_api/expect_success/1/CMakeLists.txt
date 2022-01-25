@@ -47,3 +47,5 @@ PackagerApi_add_library(
     ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp
 )
 
+
+PackagerApi_finalize_config()

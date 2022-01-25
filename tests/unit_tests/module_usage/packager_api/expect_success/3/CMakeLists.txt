@@ -47,3 +47,6 @@ PackagerApi_add_library(
     TARGET_TYPE STATIC
     ${SOURCE_CODE_DIR_ABSOLUTE}/hello.cpp
 )
+
+
+PackagerApi_finalize_config()

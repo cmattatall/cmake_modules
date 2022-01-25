@@ -86,29 +86,6 @@ function(PackagerApi_check_exists PACKAGE)
 endfunction(PackagerApi_check_exists PACKAGE)
 
 
-function(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
-    PackagerApi_check_exists(${PACKAGE})
-    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}")
-    get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
-    if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
-        file(MAKE_DIRECTORY ${PARENT_PACKAGE_STAGING_DIR})
-    endif(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
-    set(${OUT_PackagerApi_staging_dir} ${PACKAGE_STAGING_DIR} PARENT_SCOPE)
-endfunction(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
-
-
-function(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
-    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
-    set(${OUT_PackagerApi_cmake_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/cmake" PARENT_SCOPE)
-endfunction(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
-
-
-function(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
-    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
-    set(${OUT_PackagerApi_runtime_config_staging_dir} "${PACKAGE_STAGING_PREFIX}/runtime" PARENT_SCOPE)
-endfunction(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
-
-
 function(PackagerApi_get_version_file_path PACKAGE OUT_PackagerApi_version_file_path)
     PackagerApi_get_cmake_files_staging_dir(${PACKAGE} PACKAGE_CMAKE_FILES_STAGING_DIR)
     set(${OUT_PackagerApi_version_file_path} "${PACKAGE_CMAKE_FILES_STAGING_DIR}/${PACKAGE}ConfigVersion.cmake" PARENT_SCOPE)
@@ -134,16 +111,33 @@ function(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_names
 endfunction(PackagerApi_get_targets_namespace PACKAGE OUT_PackagerApi_targets_namespace)
 
 
+function(PackagerApi_get_reldir_suffix PACKAGE OUT_reldir_suffix)
+    PackagerApi_check_exists(${PACKAGE})
+    set(${OUT_reldir_suffix} ${PACKAGE} PARENT_SCOPE)
+endfunction(PackagerApi_get_reldir_suffix PACKAGE OUT_reldir_suffix)
+
+
 function(PackagerApi_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
     PackagerApi_check_exists(${PACKAGE})
-    set(${OUT_library_files_install_reldir} ${CMAKE_INSTALL_LIBDIR}/${PACKAGE} PARENT_SCOPE)
+    PackagerApi_get_reldir_suffix(${PACKAGE} INSTALL_RELDIR_SUFFIX)
+    set(${OUT_library_files_install_reldir} ${CMAKE_INSTALL_LIBDIR}/${INSTALL_RELDIR_SUFFIX} PARENT_SCOPE)
 endfunction(PackagerApi_get_library_files_install_reldir PACKAGE OUT_library_files_install_reldir)
 
 
 function(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
     PackagerApi_check_exists(${PACKAGE})
-    set(${OUT_header_files_install_reldir} ${CMAKE_INSTALL_INCLUDEDIR}/${PACKAGE} PARENT_SCOPE)
+    PackagerApi_get_reldir_suffix(${PACKAGE} INSTALL_RELDIR_SUFFIX)
+    set(${OUT_header_files_install_reldir} ${CMAKE_INSTALL_INCLUDEDIR}/${INSTALL_RELDIR_SUFFIX} PARENT_SCOPE)
 endfunction(PackagerApi_get_header_files_install_reldir PACKAGE OUT_header_files_install_reldir)
+
+
+function(PackagerApi_get_header_files_install_include_reldir PACKAGE OUT_header_files_install_includedir)
+    PackagerApi_check_exists(${PACKAGE})
+    PackagerApi_get_reldir_suffix(${PACKAGE} INSTALL_RELDIR_SUFFIX)
+    PackagerApi_get_header_files_install_reldir(${PACKAGE} HEADER_FILES_INSTALL_RELDIR)
+    get_filename_component(HEADER_FILES_INSTALL_RELDIR_DIR ${HEADER_FILES_INSTALL_RELDIR} DIRECTORY)
+    set(${OUT_header_files_install_includedir} ${HEADER_FILES_INSTALL_RELDIR_DIR} PARENT_SCOPE)
+endfunction(PackagerApi_get_header_files_install_include_reldir PACKAGE OUT_header_files_install_includedir)
 
 
 function(PackagerApi_get_cmake_files_install_reldir PACKAGE OUT_cmake_files_install_reldir)
@@ -156,6 +150,46 @@ function(PackagerApi_get_executable_files_install_reldir PACKAGE OUT_executable_
     PackagerApi_check_exists(${PACKAGE})
     set(${OUT_executable_files_install_reldir} ${CMAKE_INSTALL_BINDIR}/${PACKAGE} PARENT_SCOPE)
 endfunction(PackagerApi_get_executable_files_install_reldir PACKAGE OUT_executable_files_install_reldir)
+
+
+function(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
+    PackagerApi_check_exists(${PACKAGE})
+    set(PACKAGE_STAGING_DIR "${CMAKE_BINARY_DIR}/staging/${PACKAGE}")
+    get_filename_component(PARENT_PACKAGE_STAGING_DIR ${PACKAGE_STAGING_DIR} DIRECTORY)
+    if(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
+        file(MAKE_DIRECTORY ${PARENT_PACKAGE_STAGING_DIR})
+    endif(NOT EXISTS ${PARENT_PACKAGE_STAGING_DIR})
+    set(${OUT_PackagerApi_staging_dir} ${PACKAGE_STAGING_DIR} PARENT_SCOPE)
+endfunction(PackagerApi_get_staging_dir PACKAGE OUT_PackagerApi_staging_dir)
+
+
+function(PackagerApi_get_header_files_staging_dir PACKAGE OUT_header_files_staging_dir)
+    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    PackagerApi_get_header_files_install_reldir(${PACKAGE} HEADER_FILES_INSTALL_RELDIR)
+    set(${OUT_header_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/${HEADER_FILES_INSTALL_RELDIR}" PARENT_SCOPE)
+endfunction(PackagerApi_get_header_files_staging_dir PACKAGE OUT_header_files_staging_dir)
+
+
+function(PackagerApi_get_header_files_staging_include_dir PACKAGE OUT_header_files_staging_dir)
+    PackagerApi_get_header_files_staging_dir(${PACKAGE} HEADER_FILES_STAGING_DIR)
+    get_filename_component(HEADER_FILES_STAGING_INCLUDEDIR ${HEADER_FILES_STAGING_DIR} DIRECTORY)
+    set(${OUT_header_files_staging_dir} "${HEADER_FILES_STAGING_INCLUDEDIR}" PARENT_SCOPE)
+endfunction(PackagerApi_get_header_files_staging_include_dir PACKAGE OUT_header_files_staging_dir)
+
+
+function(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
+    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    PackagerApi_get_cmake_files_install_reldir(${PACKAGE} CMAKE_FILES_INSTALL_RELDIR)
+    set(${OUT_PackagerApi_cmake_files_staging_dir} "${PACKAGE_STAGING_PREFIX}/${CMAKE_FILES_INSTALL_RELDIR}" PARENT_SCOPE)
+endfunction(PackagerApi_get_cmake_files_staging_dir PACKAGE OUT_PackagerApi_cmake_files_staging_dir)
+
+
+function(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
+    PackagerApi_get_staging_dir(${PACKAGE} PACKAGE_STAGING_PREFIX)
+    PackagerApi_get_executable_files_install_reldir(${PACKAGE} EXECUTABLE_FILES_INSTALL_RELDIR)
+    set(${OUT_PackagerApi_runtime_config_staging_dir} "${PACKAGE_STAGING_PREFIX}/${EXECUTABLE_FILES_INSTALL_RELDIR}" PARENT_SCOPE)
+endfunction(PackagerApi_get_runtime_config_staging_dir PACKAGE OUT_PackagerApi_runtime_config_staging_dir)
+
 
 
 function(PackagerApi_get_library_component_name PACKAGE OUT_library_component_name)
@@ -1756,15 +1790,57 @@ function(PackagerApi_target_headers)
     
 
     PackagerApi_get_header_files_install_reldir(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_DIR)
+    PackagerApi_get_header_files_install_include_reldir(${_PACKAGE} PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR)
     PackagerApi_get_header_component_name(${_PACKAGE} PACKAGE_HEADER_COMPONENT)
+    PackagerApi_get_header_files_staging_dir(${_PACKAGE} PACKAGE_HEADER_FILES_STAGING_DIR)
+    PackagerApi_get_header_files_staging_include_dir(${_PACKAGE} PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR)
 
+    message(DEBUG "PACKAGE_HEADER_FILE_INSTALL_DIR:${PACKAGE_HEADER_FILE_INSTALL_DIR}")
+    message(DEBUG "PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR:${PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR}")
+    message(DEBUG "PACKAGE_HEADER_COMPONENT:${PACKAGE_HEADER_COMPONENT}")
+    message(DEBUG "PACKAGE_HEADER_FILES_STAGING_DIR:${PACKAGE_HEADER_FILES_STAGING_DIR}")
+    message(DEBUG "PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}")
+
+    if(NOT EXISTS ${PACKAGE_HEADER_FILES_STAGING_DIR})
+        file(MAKE_DIRECTORY ${PACKAGE_HEADER_FILES_STAGING_DIR})
+    endif(NOT EXISTS ${PACKAGE_HEADER_FILES_STAGING_DIR})
+
+    set(BUILD_INTERFACE_INCLUDEDIRS)
     foreach(HEADER_FILE ${_HEADERS})
 
-        get_filename_component(HEADER_DIR ${HEADER_FILE} DIRECTORY)
+        if(NOT (IS_ABSOLUTE ${HEADER_FILE}))
+            set(HEADER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${HEADER_FILE})
+        endif(NOT (IS_ABSOLUTE ${HEADER_FILE}))
+
+        if(NOT EXISTS ${HEADER_FILE})
+            message(FATAL_ERROR "File: \"${HEADER_FILE}\" does not exist.")
+        endif(NOT EXISTS ${HEADER_FILE})
+
+        get_filename_component(HEADER_BUILD_DIR ${HEADER_FILE} DIRECTORY)
+        get_filename_component(HEADER_BUILD_DIR_NAME ${HEADER_BUILD_DIR} NAME)
+        get_filename_component(HEADER_INSTALL_DIR_NAME ${PACKAGE_HEADER_FILE_INSTALL_DIR} NAME)
+        
+        message(DEBUG "HEADER_BUILD_DIR:${HEADER_BUILD_DIR}")
+        message(DEBUG "HEADER_BUILD_DIR_NAME:${HEADER_BUILD_DIR_NAME}")
+        message(DEBUG "HEADER_INSTALL_DIR_NAME:${HEADER_INSTALL_DIR_NAME}")
+
+        if(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
+            file(COPY ${HEADER_FILE} DESTINATION ${PACKAGE_HEADER_FILES_STAGING_DIR})
+            target_include_directories(${_TARGET} 
+                PUBLIC 
+                    $<BUILD_INTERFACE:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}>
+            )
+        endif(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
+
+        if(IS_ABSOLUTE ${HEADER_BUILD_DIR})
+            set(BUILD_INTERFACE_HEADER_DIR "${HEADER_BUILD_DIR}")
+        else()
+            set(BUILD_INTERFACE_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${HEADER_BUILD_DIR}")
+        endif(IS_ABSOLUTE ${HEADER_BUILD_DIR})
+        
         target_include_directories(${_TARGET} 
             PUBLIC 
-                $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_DIR}>
-                $<BUILD_INTERFACE:${HEADER_DIR}>
+                $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR}>
         )
 
         install(
@@ -1774,6 +1850,14 @@ function(PackagerApi_target_headers)
         )
     endforeach(HEADER_FILE ${_HEADERS})
 
+    list(REMOVE_DUPLICATES BUILD_INTERFACE_INCLUDEDIRS)
+
+    foreach(INCLUDEDIR ${BUILD_INTERFACE_INCLUDEDIRS})
+        target_include_directories(${_TARGET} 
+            PUBLIC 
+                $<BUILD_INTERFACE:${INCLUDEDIR}>
+        )
+    endforeach(INCLUDEDIR ${BUILD_INTERFACE_INCLUDEDIRS})
 
 endfunction(PackagerApi_target_headers)
 
