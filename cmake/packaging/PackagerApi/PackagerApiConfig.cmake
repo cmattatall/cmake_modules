@@ -1380,12 +1380,70 @@ endfunction(PackagerApi_add_executable)
 
 
 # Usage:
-# PackagerApi_target_install_headers(
+# PackagerApi_target_headers(
 #   PACKAGE my_package
 #   TARGET my_target
-#   HEADERS { header1.hpp header2.h header3.hpp }
+#   HEADERS { header1.hpp header2.h header3.hpp ... }
 # )
-function(PackagerApi_target_install_headers)
+
+
+
+################################################################################
+# @name: PackagerApi_install_headers
+#
+# @brief
+# Install header files for target: TARGET as part of package: PACKAGE
+#
+# @note
+# ** DEPRECATED ** 
+# Use PackagerApi_target_headers instead
+#
+# @usage 
+# See documentation for PackagerApi_target_headers
+#
+################################################################################
+function(PackagerApi_install_headers)
+    PackagerApi_target_headers(${ARGN})
+endfunction(PackagerApi_install_headers)
+
+
+################################################################################
+# @name: PackagerApi_target_headers
+#
+# @brief
+# Add headers to target: TARGET as part of package: PACKAGE.
+#
+# @note
+# No filtering is done by file extension. This can technically be used to 
+# install any arbitrary files and update the include directories for 
+# $<INSTALL_INTERFACE> and $<BUILD_INTERFACE> of target: TARGET
+#
+# @param        PACKAGE
+# @type        VALUE
+# @required    true
+# @description The package name
+#
+# @param       TARGET
+# @type        VALUE
+# @required    TRUE
+# @description The target for which to add the header files
+#
+# @param       HEADERS
+# @type        LIST
+# @required    TRUE
+# @description CMake (i.e. semicolon-delimited) list of header files to install
+# and include the directories to target: TARGET
+#
+#
+# @usage 
+# PackagerApi_target_headers(
+#   PACKAGE my_package
+#   TARGET my_target
+#   HEADERS header1.hpp header2.hpp /abs/path/to/header3.h ./rel/path/to/header4.h ...
+# )
+#
+################################################################################
+function(PackagerApi_target_headers)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -1586,7 +1644,7 @@ function(PackagerApi_target_install_headers)
     endforeach(HEADER_FILE ${_HEADERS})
 
 
-endfunction(PackagerApi_target_install_headers)
+endfunction(PackagerApi_target_headers)
 
 
 ################################################################################
