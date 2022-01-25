@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(CMateModules
-    VERSION 1.0.0
+    VERSION 1.6.0
     DESCRIPTION "A Collection of my own (hopeully) useful cmake modules to make cmake friendlier!"
 )
 
@@ -38,7 +38,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     PackagerDeb_init()
 
     foreach(CONFIG_FILE ${CMAKE_MODULE_CONFIG_FILES})
-        PackagerApi_add_cmake_package(
+        PackagerApi_cmake_add_package(
             VERSION ${PROJECT_VERSION}
             CONFIG_FILE ${CONFIG_FILE}
             PKG_TYPE DEB
