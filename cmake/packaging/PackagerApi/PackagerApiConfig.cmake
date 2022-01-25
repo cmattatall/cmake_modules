@@ -717,6 +717,8 @@ function(PackagerApi_add_library)
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
 
+    PackagerApi_check_exists(${_PACKAGE})
+
     if(TARGET ${_TARGET})
         message(FATAL_ERROR "Target: \"${_TARGET}\" already exists.")
     endif(TARGET ${_TARGET})
@@ -1275,6 +1277,8 @@ function(PackagerApi_add_executable)
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
 
+    PackagerApi_check_exists(${_PACKAGE})
+
     if(TARGET ${_TARGET})
         message(FATAL_ERROR "Target: \"${_TARGET}\" already exists.")
     endif(TARGET ${_TARGET})
@@ -1618,6 +1622,8 @@ function(PackagerApi_target_headers)
     ##########################################
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
+
+    PackagerApi_check_exists(${_PACKAGE})
 
     if(NOT TARGET ${_TARGET})
         message(FATAL_ERROR "Target:${_TARGET} does not exist.")
