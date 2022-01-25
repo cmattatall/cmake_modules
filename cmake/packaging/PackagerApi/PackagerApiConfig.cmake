@@ -907,13 +907,57 @@ function(PackagerApi_add_library)
 endfunction(PackagerApi_add_library)
 
 
-# Usage:
-# PackagerApi_add_cmake_package(
-#    CONFIG_FILE /abs/path/to/my_module_config_file <--- must end in Config.cmake
-#    VERSION 0.1.1
-#    [ PKG_TYPE ] [ DEB | TGZ | RPM | ZIP ] <--- defaults to DEB
-# )
+################################################################################
+# @name: PackagerApi_add_cmake_package
+#
+# @brief
+# See documentation for PackagerApi_cmake_add_package
+#
+# @usage 
+# See documentation for PackagerApi_cmake_add_package
+#
+################################################################################
 function(PackagerApi_add_cmake_package)
+    message(WARNING "${CMAKE_CURRENT_FUNCTION} is deprecated. Prefer usage of PackagerApi_cmake_add_package instead.")
+    PackagerApi_cmake_add_package(${ARGN})
+endfunction(PackagerApi_add_cmake_package)
+
+
+################################################################################
+# @name: PackagerApi_cmake_add_package
+#
+# @brief
+# Create a PackagerApi package specifically meant for use with find_package. 
+# The name of the package to later use with find_package() will be based on the config file name.
+# e.g. a value of CONFIG_FILE: MyPackageConfig.cmake corresponds to a package name of "MyPackage"
+#
+# @note
+#  - Value for CONFIG_FILE must be compliant with find_package. 
+#    Eg <LOWERCASE_PACKAGE_NAME>-config.cmake or <PACKAGE_NAME>Config.cmake.
+#  
+#  - Value for VERSION must be a value SEMVER string.
+#
+# @usage 
+# PackagerApi_cmake_add_package(
+#   CONFIG_FILE  /path/to/myMyCmakePackageConfig.cmake
+#   VERSION 9.1.2
+# )
+#
+# @param       CONFIG_FILE
+# @type        VALUE
+# @required    TRUE
+# @description The path to the config file.
+# @note        The name of the config file MUST be compliant with find_package. Eg <LOWERCASE_PACKAGE_NAME>-config.cmake or <PACKAGE_NAME>Config.cmake
+#
+#
+# @param       VERSION
+# @type        VALUE
+# @required    TRUE
+# @description The package version
+# @note        Value must be compliant with SEMVER string
+#
+################################################################################
+function(PackagerApi_cmake_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
     # Developer configures these                                               #
@@ -1159,7 +1203,7 @@ function(PackagerApi_add_cmake_package)
     endif()
     
 
-endfunction(PackagerApi_add_cmake_package)
+endfunction(PackagerApi_cmake_add_package)
 
 
 ################################################################################
