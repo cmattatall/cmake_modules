@@ -1408,15 +1408,6 @@ function(PackagerApi_add_executable)
 endfunction(PackagerApi_add_executable)
 
 
-# Usage:
-# PackagerApi_target_headers(
-#   PACKAGE my_package
-#   TARGET my_target
-#   HEADERS { header1.hpp header2.h header3.hpp ... }
-# )
-
-
-
 ################################################################################
 # @name: PackagerApi_install_headers
 #
