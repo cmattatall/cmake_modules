@@ -289,9 +289,9 @@ function(PackagerApi_target_include_directories)
 endfunction(PackagerApi_target_include_directories)
 
 
-function(PackageApi_target_sources)
+function(PackagerApi_target_sources)
     target_sources(${ARGN})
-endfunction(PackageApi_target_sources)
+endfunction(PackagerApi_target_sources)
 
 
 function(PackageApi_target_link_libraries)
