@@ -1097,11 +1097,36 @@ function(PackagerApi_add_cmake_package)
 endfunction(PackagerApi_add_cmake_package)
 
 
-# Usage:
+################################################################################
+# @name: PackagerApi_add_executable
+#
+# @brief
+# Add an executable: TARGET as part of package: PACKAGE
+#
+# @note
+#  # ADD NOTES HERE # 
+#
+# @usage 
 # PackagerApi_add_executable(
-#    PACKAGE package 
-#    TARGET target_name 
+#   PACKAGE my_package
+#   TARGET my_target
+#   [ { source1.cpp ./rel/path/to/CMAKE_CURRENT_SOURCE_DIR/source2.cpp /abs/path/source3.cpp}
+#   [ EXCLUDE_FROM_ALL ]
 # )
+#
+# @param       PACKAGE
+# @type        VALUE
+# @required    true
+# @description The name of the package that target: TARGET will be added to
+#
+#
+# @param       TARGET
+# @type        VALUE
+# @required    true
+# @description The name of the executable target
+#
+#
+################################################################################
 function(PackagerApi_add_executable)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
