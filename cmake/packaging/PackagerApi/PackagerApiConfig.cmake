@@ -255,16 +255,52 @@ endfunction(PackagerApi_add_component_dependency COMPONENT_NAME COMPONENT_DEPEND
 # AS IT FINALIZES THE SETTIGNS FOR ALL THE VARIABLES                           #
 # CONFIGURED USING THIS MODULE'S API FUNCTIONS AND GENERATES THE CPACK CONFIG. #
 ################################################################################
+
+
+################################################################################
+# @name: PackagerApi_finalize_config
+#
+# @brief
+# Finalize the PackagerApi configuration for all targets and packages
+#
+# @note
+# ** MUST BE CALLED LAST IN THE PARENT SCOPE **
+#
+# @usage 
+# PackagerApi_finalize_config()
+#
+################################################################################
 macro(PackagerApi_finalize_config)
     Packager_finalize_config()
 endmacro(PackagerApi_finalize_config)
 
 
-# Usage:
-# PackagerApi_add( 
-#   PACKAGE my_package    
-#   VERSION 0.9.1 
+################################################################################
+# @name: PackagerApi_add_package
+#
+# @brief
+# Add a package: PACKAGE for use with PackagerApi functions
+#
+#
+# @usage 
+# PackagerApi_add_package(
+#   PACKAGE my_package
+#   VERSION 0.2.3
 # )
+#
+# @param       PACKAGE
+# @type        VALUE
+# @required    TRUE
+# @description The name of the package
+#
+#
+# @param       VERSION
+# @type        VALUE
+# @required    TRUE
+# @description The package version. Must be a valid SEMVER string
+#
+#
+################################################################################
 function(PackagerApi_add_package)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
@@ -528,12 +564,41 @@ function(PackagerApi_add_package)
 endfunction(PackagerApi_add_package)
 
 
-# Usage:
+
+################################################################################
+# @name: PackagerApi_add_library
+#
+# @brief
+# Add a library target: TARGET to package: PACKAGE
+#
+# @note
+# Usage is conformant to add_library()
+#
+# @usage 
 # PackagerApi_add_library(
-#    PACKAGE package 
-#    TARGET target_name 
-#    [ TARGET_TYPE] [ OBJECT | STATIC | SHARED | INTERFACE ] <--- SHARED is the default
+#   PACKAGE my_package
+#   TARGET my_target
+#   TARGET_TYPE SHARED | STATIC | INTERFACE | OBJECT
+#   ...
 # )
+#
+# @param       PACKAGE
+# @type        VALUE
+# @required    TRUE
+# @description The name of the package
+#
+# @param       TARGET
+# @type        VALUE
+# @required    TRUE
+# @description The name of the library target
+#
+# @param       TARGET_TYPE
+# @type        VALUE
+# @required    TRUE
+# @description The type of target. 
+# @choices     SHARED | STATIC | INTERFACE | OBJECT
+#
+################################################################################
 function(PackagerApi_add_library)
     message(DEBUG "[in ${CMAKE_CURRENT_FUNCTION}] : ARGN=${ARGN}")
     ############################################################################
