@@ -1840,42 +1840,35 @@ function(PackagerApi_target_headers)
         message(DEBUG "HEADER_BUILD_DIR_NAME:${HEADER_BUILD_DIR_NAME}")
         message(DEBUG "HEADER_INSTALL_DIR_NAME:${HEADER_INSTALL_DIR_NAME}")
 
-        if(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
-        # This handles the case wherein the headers are in a directory such as 
-        # ${CMAKE_CURRENT_SOURCE_DIR}/include/lib.hpp and the source files have
-        # #include directives that reference the __ HEADER INSTALL LOCATION __
-        # e.g. 
-        # #include "package_name/lib.hpp"
 
-            file(COPY ${HEADER_FILE} DESTINATION ${PACKAGE_HEADER_FILES_STAGING_DIR})
-            PackagerApi_target_include_directories(${_TARGET} 
-                PRIVATE
-                    $<BUILD_INTERFACE:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}>
-            )
+        file(COPY ${HEADER_FILE} DESTINATION ${PACKAGE_HEADER_FILES_STAGING_DIR})
 
-        else()
-
-        # This handles the case wherein the headers are in a directory such as
-        # ${CMAKE_CURRENT_SOURCE_DIR}/include/package_name/lib.hpp and the 
-        # source files have 
-        # #include directives that reference the __ HEADER BUILD LOCATION __
-        # e.g. 
-        # #include "lib.hpp"
-
-            PackagerApi_target_include_directories(${_TARGET} 
-                PRIVATE
-                    $<BUILD_INTERFACE:${HEADER_BUILD_DIR}>
-            )
-        endif(NOT (HEADER_BUILD_DIR_NAME STREQUAL HEADER_INSTALL_DIR_NAME))
-
-        if(IS_ABSOLUTE ${HEADER_BUILD_DIR})
-            set(BUILD_INTERFACE_HEADER_DIR "${HEADER_BUILD_DIR}")
-        else()
-            set(BUILD_INTERFACE_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${HEADER_BUILD_DIR}")
-        endif(IS_ABSOLUTE ${HEADER_BUILD_DIR})
-        
         PackagerApi_target_include_directories(${_TARGET} 
+            PRIVATE
+
+                # This handles the case wherein the headers are in a directory such as 
+                # ${CMAKE_CURRENT_SOURCE_DIR}/include/lib.hpp and the source files have
+                # #include directives that reference the __ HEADER INSTALL LOCATION __
+                # Example:
+                # #include "package_name/lib.hpp"
+                # 
+                # To resolve this, we can use an install staging directory in the 
+                # build tree and PRIVATELY include that directory for the target.
+                $<BUILD_INTERFACE:${PACKAGE_HEADER_FILES_STAGING_INCLUDE_DIR}>
             PUBLIC 
+
+                # This is the typical use case for most targets wherein the 
+                # target header is referenced directly from the source tree.
+                # Example: #include "<HEADER_FILE>"
+                #
+                # We just include the header's directory for the target.
+                $<BUILD_INTERFACE:${HEADER_BUILD_DIR}>
+
+                # This is just the installation include directory. e.g: /usr/include.
+                # Projects that want to #include the headers for the installed target.
+                # Example:
+                # *** CORRECT:   #include "<PACKAGE_NAME>/<HEADER_FILE>" ***
+                # *** INCORRECT: #include "<HEADER_FILE>" ***
                 $<INSTALL_INTERFACE:${PACKAGE_HEADER_FILE_INSTALL_INCLUDEDIR}>
         )
 
