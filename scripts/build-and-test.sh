@@ -24,6 +24,21 @@ FAILED_POSITIVE_TESTS=()
 FAILED_NEGATIVE_TESTS=()
 FAILURE_COUNT=0
 
+if [ "${POST_TEST_CLEANUP}" != "OFF" ] && [ "${POST_TEST_CLEANUP}" != "ON" ]; then
+    echo "Error, value of POST_TEST_CLEANUP must be either \"OFF\" or \"ON\". Current value: \"${POST_TEST_CLEANUP}\""
+    exit -1
+fi
+
+if [ "${ABORT_ON_FAILURE}" != "OFF" ] && [ "${ABORT_ON_FAILURE}" != "ON" ]; then
+    echo "Error, value of ABORT_ON_FAILURE must be either \"OFF\" or \"ON\". Current value: \"${ABORT_ON_FAILURE}\""
+    exit -1
+fi
+
+if [ "${DEBUG_TESTS}" != "OFF" ] && [ "${DEBUG_TESTS}" != "ON" ]; then
+    echo "Error, value of DEBUG_TESTS must be either \"OFF\" or \"ON\". Current value: \"${DEBUG_TESTS}\""
+    exit -1
+fi
+
 function run_test () {
     local TEST_CMAKE_SOURCE_DIR=${1:?"Error, no argument provided for TEST_CMAKE_SOURCE_DIR"}
     local TEST_CMAKE_BUILD_DIR=${2:?"Error, no argument provided for TEST_CMAKE_BUILD_DIR"}
