@@ -3,6 +3,11 @@
 # We will warn if graphviz not supported
 cmake_minimum_required(VERSION 3.10) 
 
+macro(GraphvizDocugen_init)
+    
+endmacro(GraphvizDocugen_init)
+
+
 function(GraphvizDocugen_make_target_graph)
     if(${CMAKE_VERSION} VERSION_GREATER "3.21.0")
         set(GRAPHVIZ_WORKDIR ${CMAKE_BINARY_DIR})
