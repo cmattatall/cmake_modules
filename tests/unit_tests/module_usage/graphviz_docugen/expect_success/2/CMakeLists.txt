@@ -24,8 +24,15 @@ find_package(GraphvizDocugen REQUIRED)
 
 add_library(a src/a.cpp)
 add_library(b src/b.cpp)
-add_executable()
+add_library(c src/c.cpp)
 
+target_link_libraries(a PUBLIC b)
+target_link_libraries(a PUBLIC c)
+
+add_executable(main src/main.cpp)
+target_link_libraries(main PRIVATE a)
+
+GraphvizDocugen_make_target_graph()
 
 #[[
 

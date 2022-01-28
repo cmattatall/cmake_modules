@@ -26,13 +26,15 @@ function(GraphvizDocugen_make_target_graph)
             WORKING_DIRECTORY "${GRAPHVIZ_WORKDIR}"
         )
 
-        file(WRITE "${GRAPHVIZ_WORKDIR}/graphviz_cleanup.cmake" "cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\nfile(GLOB DOT_FILES \"${GRAPHVIZ_WORKDIR}/graph\\.dot\\.*\")\nmessage(DEBUG \"DOT_FILES:\${DOT_FILES}\")\nfile(REMOVE \${DOT_FILES})")
-
+        set(GRAPHVIZ_CLEANUP_SCRIPT "${GRAPHVIZ_WORKDIR}/graphviz_cleanup.cmake")
+        file(WRITE "${GRAPHVIZ_CLEANUP_SCRIPT}" "cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\nfile(GLOB DOT_FILES \"${GRAPHVIZ_WORKDIR}/graph\\.dot\\.*\")\nmessage(DEBUG \"DOT_FILES:\${DOT_FILES}\")\nfile(REMOVE \${DOT_FILES})")
         add_custom_command(
             TARGET ${GRAPHVIZ_IMAGE_TARGET}
             POST_BUILD
-            COMMENT "Cleaning up the dot files produced during build of ${GRAPHVIZ_IMAGE_TARGET}"
+            COMMENT "Cleaning up the dot files produced during build of ${GRAPHVIZ_IMAGE_TARGET} ... "
             COMMAND ${CMAKE_COMMAND} -P "${GRAPHVIZ_WORKDIR}/graphviz_cleanup.cmake"
+            COMMAND ${CMAKE_COMMAND} -E remove "${GRAPHVIZ_CLEANUP_SCRIPT}"
+            COMMAND ${CMAKE_COMMAND} -E echo "Done."
             WORKING_DIRECTORY "${GRAPHVIZ_WORKDIR}"
         )
     else()
