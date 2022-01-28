@@ -17,18 +17,17 @@ endmacro(GraphvizDocugen_init)
 # @usage 
 # GraphvizDocugen_make_target_graph(
 #   [ TARGET_PREFIX graphviz ] 
-#   [ TARGETS_PNG targets.png ] 
+#   [ OUTPUT_PNG targets.png ] 
 #   [ DOTFILE graph.dot ] 
-#   [ WORKING_DIRECTORY /my_working/directory/absolute/path ] 
 # )
 #
-# @param       TARGETS_PREFIX
+# @param       TARGET_PREFIX
 # @type        VALUE
 # @required    FALSE
 # @description The prefix to use for graphviz targets to prevent target name collision. Default = graphviz
 #
 #
-# @param       TARGETS_PNG
+# @param       OUTPUT_PNG
 # @type        VALUE
 # @required    FALSE
 # @description The name of the output png 
@@ -38,13 +37,6 @@ endmacro(GraphvizDocugen_init)
 # @type        VALUE
 # @required    FALSE
 # @description The name of the generated dot file
-#
-#
-# @param       WORKING_DIRECTORY
-# @type        VALUE
-# @required    FALSE
-# @description The directory in which to perform the target graph generation
-#
 #
 ################################################################################
 function(GraphvizDocugen_make_target_graph)
@@ -67,9 +59,8 @@ function(GraphvizDocugen_make_target_graph)
     set(SINGLE_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
         TARGET_PREFIX
-        TARGETS_PNG
+        OUTPUT_PNG
         DOTFILE
-        WORKING_DIRECTORY
     )
 
     ##########################
@@ -104,10 +95,8 @@ function(GraphvizDocugen_make_target_graph)
     # we would set BAR-DEFAULT.
     # set(BAR-DEFAULT MY_DEFAULT_BAR_VALUE)
     set(TARGET_PREFIX-DEFAULT graphviz)
-    set(TARGETS_PNG-DEFAULT targets.png)
+    set(OUTPUT_PNG-DEFAULT targets.png)
     set(DOTFILE-DEFAULT graph.dot)
-    set(WORKING_DIRECTORY-DEFAULT ${CMAKE_BINARY_DIR})
-    
 
     ############################################################################
     # Perform the argument parsing                                             #
@@ -229,9 +218,13 @@ function(GraphvizDocugen_make_target_graph)
     # NOW THE FUNCTION LOGIC SPECIFICS BEGIN #
     ##########################################
 
-    if(NOT _TARGETS_PNG)
-        message(FATAL_ERROR "There is a logic error in ${CMAKE_CURRENT_FUNCTION}. _TARGETS_PNG not defined. Please contact the library maintainer")
-    endif(NOT _TARGETS_PNG)
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], _OUTPUT_PNG:\"${_OUTPUT_PNG}\"")
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], _DOTFILE:\"${_DOTFILE}\"")
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], _TARGET_PREFIX:\"${_TARGET_PREFIX}\"")
+
+    if(NOT _OUTPUT_PNG)
+        message(FATAL_ERROR "There is a logic error in ${CMAKE_CURRENT_FUNCTION}. _OUTPUT_PNG not defined. Please contact the library maintainer")
+    endif(NOT _OUTPUT_PNG)
 
     if(NOT _DOTFILE)
         message(FATAL_ERROR "There is a logic error in ${CMAKE_CURRENT_FUNCTION}. _DOTFILE not defined. Please contact the library maintainer")
@@ -241,10 +234,12 @@ function(GraphvizDocugen_make_target_graph)
         message(FATAL_ERROR "There is a logic error in ${CMAKE_CURRENT_FUNCTION}. _TARGET_PREFIX not defined. Please contact the library maintainer")
     endif(NOT _TARGET_PREFIX)
 
-    if(NOT _WORKING_DIRECTORY)
-        message(FATAL_ERROR "There is a logic error in ${CMAKE_CURRENT_FUNCTION}. _WORKING_DIRECTORY not defined. Please contact the library maintainer")
-    endif(NOT _WORKING_DIRECTORY)
+    foreach(UNKNOWN_ARG ${_UNPARSED_ARGUMENTS})
+        message(FATAL_ERROR "\"${CMAKE_CURRENT_FUNCTION}\" invoked with unknown argument: \"${UNKNOWN_ARG}\".\nArgs: ${ARGN}")
+    endforeach(UNKNOWN_ARG ${_UNPARSED_ARGUMENTS})
 
+
+    set(GRAPHVIZ_WORKDIR "${CMAKE_BINARY_DIR}")
     if(${CMAKE_VERSION} VERSION_GREATER "3.21.0")
         find_program(DOT_EXECUTABLE NAMES dot)
         message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], DOT_EXECUTABLE\":${DOT_EXECUTABLE}\"")
@@ -258,27 +253,38 @@ function(GraphvizDocugen_make_target_graph)
         if(TARGET ${DOTFILES_TARGET})
             message(FATAL_ERROR "Target: \"${DOTFILES_TARGET}\" already exists.")
         endif(TARGET ${DOTFILES_TARGET})
+
+
         add_custom_target(${DOTFILES_TARGET}
             COMMENT "Generating dot files from cmake targets ... "
             COMMAND ${CMAKE_COMMAND} "--graphviz=${_DOTFILE}" .
             COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            WORKING_DIRECTORY "${_WORKING_DIRECTORY}"
+            WORKING_DIRECTORY "${GRAPHVIZ_WORKDIR}"
         )
 
         set(DEPGRAPH_PNG_TARGET ${_TARGET_PREFIX}-png)
+        if(TARGET ${DEPGRAPH_PNG_TARGET})
+            message(FATAL_ERROR "Target: \"${DEPGRAPH_PNG_TARGET}\" already exists.")
+        endif(TARGET ${DEPGRAPH_PNG_TARGET})
         add_custom_target(${DEPGRAPH_PNG_TARGET} ALL
             DEPENDS ${DOTFILES_TARGET}
             COMMENT "Generating target visualization using \"${DOT_EXECUTABLE}\" ... "
-            COMMAND ${DOT_EXECUTABLE} -Tpng ${_DOTFILE} -o ${_TARGETS_PNG}
+            COMMAND ${DOT_EXECUTABLE} -Tpng ${_DOTFILE} -o ${_OUTPUT_PNG}
             COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            COMMAND ${CMAKE_COMMAND} -E echo "Produced target dependency graph: ${_WORKING_DIRECTORY}/${_TARGETS_PNG}."
-            WORKING_DIRECTORY "${_WORKING_DIRECTORY}"
+            COMMAND ${CMAKE_COMMAND} -E echo "Produced target dependency graph: ${GRAPHVIZ_WORKDIR}/${_OUTPUT_PNG}."
+            WORKING_DIRECTORY "${GRAPHVIZ_WORKDIR}"
         )
         
-        set(GRAPHVIZ_POSTBUILD_SCRIPT "${_WORKING_DIRECTORY}/${DEPGRAPH_PNG_TARGET}-postbuild.cmake")
-        file(WRITE "${GRAPHVIZ_POSTBUILD_SCRIPT}" "cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\nfile(GLOB DOT_FILES \"${_WORKING_DIRECTORY}/graph\\.dot\\.*\")\nmessage(DEBUG \"DOT_FILES:\${DOT_FILES}\")\nfile(REMOVE \${DOT_FILES})")
+        
+        set(GRAPHVIZ_POSTBUILD_SCRIPT "${GRAPHVIZ_WORKDIR}/${DEPGRAPH_PNG_TARGET}-postbuild.cmake")
+        set(SCRIPT_CONTENT "\n")
+        set(SCRIPT_CONTENT "${SCRIPT_CONTENT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
+        set(SCRIPT_CONTENT "${SCRIPT_CONTENT}file(GLOB DOT_FILES \"${GRAPHVIZ_WORKDIR}/${_DOTFILE}\\.*\")\n")
+        set(SCRIPT_CONTENT "${SCRIPT_CONTENT}message(\"DOT_FILES:>\${DOT_FILES}<\")\n")
+        set(SCRIPT_CONTENT "${SCRIPT_CONTENT}file(REMOVE \${DOT_FILES})\n")
+        file(WRITE "${GRAPHVIZ_POSTBUILD_SCRIPT}" "${SCRIPT_CONTENT}")
         add_custom_command(
-            TARGET ${_TARGET_PREFIX}-png
+            TARGET ${DEPGRAPH_PNG_TARGET}
             POST_BUILD
             DEPENDS DEPENDS ${DOTFILES_TARGET}
             COMMENT "Cleaning up intermediate files produced by target: \"${DOTFILES_TARGET}\" ... "
@@ -286,7 +292,7 @@ function(GraphvizDocugen_make_target_graph)
             COMMAND ${CMAKE_COMMAND} -E remove "${GRAPHVIZ_POSTBUILD_SCRIPT}"
             COMMAND ${CMAKE_COMMAND} -E remove "${_DOTFILE}"
             COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            WORKING_DIRECTORY "${_WORKING_DIRECTORY}"
+            WORKING_DIRECTORY "${GRAPHVIZ_WORKDIR}"
         )
 
     else()
