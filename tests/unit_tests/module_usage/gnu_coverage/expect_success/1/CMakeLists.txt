@@ -17,11 +17,7 @@ project(
     LANGUAGES C CXX
 )
 
-
-# FIND PACKAGES 
-find_package(GnuCoverage REQUIRED)
-
-#[[
+set(CMAKE_BUILD_TYPE Debug)
 
 if(NOT DEFINED SOURCE_CODE_DIR_ABSOLUTE)
     message(FATAL_ERROR "SOURCE_CODE_DIR_ABSOLUTE not defined")
@@ -31,4 +27,24 @@ if(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
     message(FATAL_ERROR "HEADER_FILE_DIR_ABSOLUTE not defined") 
 endif(NOT DEFINED HEADER_FILE_DIR_ABSOLUTE)
 
-#]]
+
+find_package(GnuCoverage REQUIRED)
+GnuCoverage_init()
+
+
+add_library(lib_to_profile src/lib_to_profile.cpp)
+target_include_directories(lib_to_profile PUBLIC include/)
+add_executable(test_runner src/test_runner.cpp)
+target_link_libraries(test_runner PRIVATE lib_to_profile)
+
+
+GnuCoverage_target_add_coverage_definitions(
+    TARGET lib_to_profile
+)
+
+GnuCoverage_add_report_target(                                            
+    COVERAGE_TARGET     coverage                                          
+    TEST_RUNNER         test_runner                                        
+    POST_BUILD                                                                                     
+)   
+
