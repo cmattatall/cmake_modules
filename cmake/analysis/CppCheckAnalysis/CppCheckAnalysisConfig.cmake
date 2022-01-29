@@ -1,6 +1,30 @@
 cmake_minimum_required(VERSION 3.21)
 include(ProcessorCount)
 
+
+function(CppCheckAnalysis_get_root_dir OUT_root_dir)
+    set(${OUT_root_dir} "${CMAKE_BINARY_DIR}/cppcheck" PARENT_SCOPE)
+endfunction(CppCheckAnalysis_get_root_dir OUT_root_dir)
+
+
+function(CppCheckAnalysis_get_analysis_dir OUT_analysis_dir)
+    CppCheckAnalysis_get_root_dir(CPPCHECK_ROOT_DIR)
+    set(${OUT_analysis_dir} "${CPPCHECK_ROOT_DIR}/analysis" PARENT_SCOPE)
+endfunction(CppCheckAnalysis_get_analysis_dir OUT_analysis_dir)
+
+
+function(CppCheckAnalysis_get_target_dir TARGET OUT_target_dir)
+    CppCheckAnalysis_get_analysis_dir(CPPCHECK_ANALYSIS_DIR)
+    set(${OUT_target_dir} "${CPPCHECK_ANALYSIS_DIR}/${TARGET}" PARENT_SCOPE)
+endfunction(CppCheckAnalysis_get_target_dir TARGET OUT_target_dir)
+
+
+function(CppCheckAnalysis_get_target_output_file TARGET OUT_target_cppcheck_file)
+    CppCheckAnalysis_get_target_dir(${TARGET} TARGET_CPPCHECK_DIR)
+    set(${OUT_target_cppcheck_file} "${TARGET_CPPCHECK_DIR}/${TARGET}-cppcheck.output" PARENT_SCOPE)
+endfunction(CppCheckAnalysis_get_target_output_file TARGET OUT_target_cppcheck_file)
+
+
 function(CppCheckAnalysis_check_initialized)
     if(NOT CPPCHECK_EXECUTABLE)
         message(FATAL_ERROR "CPPCHECK_EXECUTABLE not set. Please call CppCheckAnalysis_init before other CppCheckAnalysis functions")
@@ -43,6 +67,12 @@ macro(CppCheckAnalysis_init)
     if(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
         add_custom_target(${CPPCHECK_ANALYSIS_TARGET})
     endif(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
+
+    CppCheckAnalysis_get_root_dir(CPPCHECK_ROOT_DIR)
+    if(NOT (IS_DIRECTORY ${CPPCHECK_ROOT_DIR}))
+        file(MAKE_DIRECTORY ${CPPCHECK_ROOT_DIR})
+    endif(NOT (IS_DIRECTORY ${CPPCHECK_ROOT_DIR}))
+    
 endmacro(CppCheckAnalysis_init)
 
 
@@ -84,6 +114,11 @@ endmacro(CppCheckAnalysis_init)
 #              target cppcheck will build ALL static analysis targets, not just
 #              target: TARGET.
 #
+################################################################################
+# TODOLIST:
+# 
+# - allow arguments (and with a default value) for a .suppressions file
+# 
 ################################################################################
 function(CppCheckAnalysis_configure_target)
 
@@ -267,10 +302,25 @@ function(CppCheckAnalysis_configure_target)
     
     set(TARGET_SOURCE_ANALYSIS_TARGET_NAME ${_TARGET}-cppcheck-analysis)
 
-    set(CPPCHECK_COMMAND ${CPPCHECK_EXECUTABLE})
+    CppCheckAnalysis_get_target_dir(${_TARGET} TARGET_CPPCHECK_DIR)
+    if(NOT (IS_DIRECTORY ${TARGET_CPPCHECK_DIR}))
+        file(MAKE_DIRECTORY ${TARGET_CPPCHECK_DIR})
+    endif(NOT (IS_DIRECTORY ${TARGET_CPPCHECK_DIR}))
+
+    # Set up the actual targets and cppcheck command
+    set(CPPCHECK_COMMAND 
+        ${CPPCHECK_EXECUTABLE}
+        --enable=all  
+    )
+    if(FETCHCONTENT_BASE_DIR AND (IS_DIRECTORY FETCHCONTENT_BASE_DIR))
+        # Exclude third-party sources from the check
+        list(APPEND CPPCHECK_COMMAND -i ${FETCHCONTENT_BASE_DIR}) 
+    endif(FETCHCONTENT_BASE_DIR AND (IS_DIRECTORY FETCHCONTENT_BASE_DIR))
+    
 
     if(_VERBOSE)
         list(APPEND CPPCHECK_COMMAND "--verbose")
+        list(APPEND CPPCHECK_COMMAND "--report-progress")
     endif(_VERBOSE)
 
     # Add the source files for 
@@ -281,13 +331,44 @@ function(CppCheckAnalysis_configure_target)
         return()
     endif(TARGET_SOURCE_FILES STREQUAL TARGET_SOURCE_FILES-NOTFOUND)
 
+    # Convert all the sources to absolute paths to prevent weird bugs
+    get_target_property(TARGET_SOURCE_DIR ${_TARGET} SOURCE_DIR)
+    set(TARGET_SOURCE_FILES_ABSPATH "")
+    foreach(SOURCE_FILE ${TARGET_SOURCE_FILES})
+        if(IS_ABSOLUTE ${SOURCE_FILE})
+            set(SOURCE_FILE_ABSPATH ${SOURCE_FILE})
+        else()
+            set(SOURCE_FILE_ABSPATH "${TARGET_SOURCE_DIR}/${SOURCE_FILE}")
+        endif(IS_ABSOLUTE ${SOURCE_FILE})
+        list(APPEND TARGET_SOURCE_FILES_ABSPATH ${SOURCE_FILE_ABSPATH})
+    endforeach(SOURCE_FILE ${TARGET_SOURCE_FILES})
+    message(DEBUG "TARGET_SOURCE_FILES_ABSPATH:${TARGET_SOURCE_FILES_ABSPATH}")
+
+
+    get_target_property(TARGET_TYPE ${_TARGET} TYPE)
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_TYPE:${TARGET_TYPE}")
+    if(NOT (TARGET_TYPE) OR (TARGET_TYPE STREQUAL TARGET_TYPE-NOTFOUND))
+        message(FATAL_ERROR "Target:\"${_TARGET}\" does not have property: \"TYPE\".")
+    endif(NOT (TARGET_TYPE) OR (TARGET_TYPE STREQUAL TARGET_TYPE-NOTFOUND))
+
+    # Configure target-type-specific suppressions.
+    # e.g. We don't care about unused functions for libraries
+    if(TARGET_TYPE STREQUAL EXECUTABLE)
+    elseif((TARGET_TYPE STREQUAL STATIC_LIBRARY) OR (TARGET_TYPE STREQUAL SHARED_LIBRARY) OR (TARGET_TYPE STREQUAL OBJECT_LIBRARY))
+        list(APPEND CPPCHECK_COMMAND "--suppress=unusedFunction")
+    else()
+        message(FATAL_ERROR "Function ${CMAKE_CURRENT_FUNCTION} does not know how to handle target (\"${_TARGET}\") with type:\"${TARGET_TYPE}\".")
+    endif()
+
+
+    CppCheckAnalysis_get_target_output_file(${_TARGET} TARGET_CPPCHECK_OUTPUT_FILE)
     if(_POST_BUILD)
         set(BUILD_GROUP_ALL ALL)
     endif(_POST_BUILD)
     add_custom_target(${TARGET_SOURCE_ANALYSIS_TARGET_NAME}
         ${BUILD_GROUP_ALL}
         COMMENT "Performing cppcheck static analysis on sources for target: \"${_TARGET}\""
-        COMMAND ${CPPCHECK_COMMAND} ${TARGET_SOURCE_FILES}
+        COMMAND ${CPPCHECK_COMMAND} --output-file=${TARGET_CPPCHECK_OUTPUT_FILE} ${TARGET_SOURCE_FILES_ABSPATH}
         DEPENDS ${_TARGET}
     )
 
