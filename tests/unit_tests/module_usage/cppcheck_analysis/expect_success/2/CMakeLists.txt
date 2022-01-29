@@ -28,3 +28,10 @@ CppCheckAnalysis_configure_target(
     TARGET foo
     VERBOSE
 )
+
+add_library(foo_abs ${CMAKE_CURRENT_SOURCE_DIR}/src/foo.cpp)
+CppCheckAnalysis_configure_target(
+    TARGET foo_abs
+    VERBOSE
+)
+
