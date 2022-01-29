@@ -12,14 +12,9 @@ function(CppCheckAnalysis_get_analysis_target_name OUT_analysis_target_name)
 endfunction(CppCheckAnalysis_get_analysis_target_name OUT_analysis_target_name)
 
 
-
 function(CppCheckAnalysis_get_processor_count OUT_processor_count)
     ProcessorCount(N)
     set(${OUT_processor_count} ${N} PARENT_SCOPE)
-    CppCheckAnalysis_get_analysis_target_name(CPPCHECK_ANALYSIS_TARGET)
-    if(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
-        add_custom_target(${CPPCHECK_ANALYSIS_TARGET})
-    endif(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
 endfunction(CppCheckAnalysis_get_processor_count OUT_processor_count)
 
 
@@ -43,9 +38,12 @@ macro(CppCheckAnalysis_init)
         message(WARNING "Could not find program clang-tidy on disk. ClangTidyAnalysis functions will fail.")
         set(CPPCHECK_EXECUTABLE "") # empty string
     endif(CPPCHECK_EXECUTABLE STREQUAL CPPCHECK_EXECUTABLE-NOTFOUND)
+
+    CppCheckAnalysis_get_analysis_target_name(CPPCHECK_ANALYSIS_TARGET)
+    if(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
+        add_custom_target(${CPPCHECK_ANALYSIS_TARGET})
+    endif(NOT TARGET ${CPPCHECK_ANALYSIS_TARGET})
 endmacro(CppCheckAnalysis_init)
-
-
 
 
 ################################################################################
