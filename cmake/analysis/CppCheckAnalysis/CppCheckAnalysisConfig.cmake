@@ -277,10 +277,9 @@ function(CppCheckAnalysis_configure_target)
     get_target_property(TARGET_SOURCE_FILES ${_TARGET} SOURCES)
     message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCE_FILES:${TARGET_SOURCE_FILES}")
     if(TARGET_SOURCE_FILES STREQUAL TARGET_SOURCE_FILES-NOTFOUND)
-        message(WARNING "Target: \"${_TARGET}\" contains no source files. Cannot configure cppcheck analysis")
+        message(WARNING "Target: \"${_TARGET}\" contains no source files. Cannot configure it for cppcheck analysis")
         return()
     endif(TARGET_SOURCE_FILES STREQUAL TARGET_SOURCE_FILES-NOTFOUND)
-
 
     if(_POST_BUILD)
         set(BUILD_GROUP_ALL ALL)
@@ -288,7 +287,7 @@ function(CppCheckAnalysis_configure_target)
     add_custom_target(${TARGET_SOURCE_ANALYSIS_TARGET_NAME}
         ${BUILD_GROUP_ALL}
         COMMENT "Performing cppcheck static analysis on sources for target: \"${_TARGET}\""
-        COMMAND ${CPPCHECK_COMMAND}
+        COMMAND ${CPPCHECK_COMMAND} ${TARGET_SOURCE_FILES}
         DEPENDS ${_TARGET}
     )
 
