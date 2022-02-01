@@ -129,12 +129,10 @@ macro(GnuCoverage_init)
         message( WARNING "Code coverage results with an optimized (non-Debug) build may be misleading" )
     endif() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 
-    if(TARGET GnuCoverage)
-        message(FATAL_ERROR "Target: \"GnuCoverage\" already exists!")
-    endif(TARGET GnuCoverage)
-
-    add_custom_target(GnuCoverage)
-
+    if(NOT TARGET GnuCoverage)
+        add_custom_target(GnuCoverage)
+        
+    endif(NOT TARGET GnuCoverage)
 endmacro(GnuCoverage_init)
 
 
