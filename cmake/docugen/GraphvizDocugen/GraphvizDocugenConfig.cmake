@@ -280,7 +280,6 @@ function(GraphvizDocugen_make_target_graph)
         set(SCRIPT_CONTENT "\n")
         set(SCRIPT_CONTENT "${SCRIPT_CONTENT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
         set(SCRIPT_CONTENT "${SCRIPT_CONTENT}file(GLOB DOT_FILES \"${GRAPHVIZ_WORKDIR}/${_DOTFILE}\\.*\")\n")
-        set(SCRIPT_CONTENT "${SCRIPT_CONTENT}message(\"DOT_FILES:>\${DOT_FILES}<\")\n")
         set(SCRIPT_CONTENT "${SCRIPT_CONTENT}file(REMOVE \${DOT_FILES})\n")
         file(WRITE "${GRAPHVIZ_POSTBUILD_SCRIPT}" "${SCRIPT_CONTENT}")
         add_custom_command(

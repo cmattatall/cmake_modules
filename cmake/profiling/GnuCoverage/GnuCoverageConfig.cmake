@@ -421,6 +421,7 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 # GnuCoverage_add_report_target(
 #   COVERAGE_TARGET coverage
 #   TEST_RUNNER     my-test-runner
+#   TARGETS { target_under_test1 target_under_test2 ... }
 #   [ POST_BUILD ]
 #   [ MIN_LINE_PERCENT 50 ]
 #   [ MIN_FUNC_PERCENT 67 ]
@@ -460,6 +461,12 @@ endfunction(GnuCoverage_setup_executable_for_coverage _targetname _testrunner _C
 # @description The minimum acceptable coverage percentage by function that will
 #              pass the build
 #       
+#
+# @param       TARGETS
+# @type        LIST
+# @required    TRUE
+# @description List of targets that are under test
+#
 ################################################################################
 function(GnuCoverage_add_report_target)
 
@@ -492,6 +499,7 @@ function(GnuCoverage_add_report_target)
     ##########################
     set(MULTI_VALUE_ARGS-REQUIRED
         # Add your argument keywords here
+        TARGETS
     )
     set(MULTI_VALUE_ARGS-OPTIONAL
         # Add your argument keywords here
@@ -646,11 +654,18 @@ function(GnuCoverage_add_report_target)
     if(_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Invalid arguments: ${_UNPARSED_ARGUMENTS} provided to ${CMAKE_CURRENT_FUNCTION}")
     endif(_UNPARSED_ARGUMENTS)
-    
 
     if(NOT TARGET ${_TEST_RUNNER} )
         message(FATAL_ERROR "Target: ${_TEST_RUNNER} does not exist!")
     endif(NOT TARGET ${_TEST_RUNNER} )
+
+    foreach(TARGET ${_TARGETS})
+        if(NOT TARGET ${TARGET})
+            message(FATAL_ERROR "Target:\"${TARGET}\" does not exist.")
+        endif(NOT TARGET ${TARGET})
+        GnuCoverage_target_add_coverage_definitions(TARGET ${TARGET})
+        target_link_libraries(${_TEST_RUNNER} PRIVATE ${TARGET})
+    endforeach(TARGET ${_TARGETS})
 
     target_link_libraries(${_TEST_RUNNER} PRIVATE gcov)
 
@@ -718,8 +733,6 @@ function(GnuCoverage_add_report_target)
     #       - it doesnt work in many cases depending on where the targets 
     #         that TEST_RUNNER has been linked against are defined/declared
 
-    get_target_property(LINKED_LIBRARIES ${_TEST_RUNNER} LINK_LIBRARIES)
-    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], LINKED_LIBRARIES:${LINKED_LIBRARIES}")
 
 
     # WE ARE COPYING THE .gcda and .gcno files into ${COVERAGE_DIR}.
@@ -729,48 +742,54 @@ function(GnuCoverage_add_report_target)
     # https://gcc.gnu.org/onlinedocs/gcc-10.1.0/gcc/Instrumentation-Options.html
     set(TARGET_GCNO_FILES) # empty list
     set(TARGET_GCDA_FILES) # empty list
-    if(NOT (LINKED_LIBRARIES STREQUAL LINKED_LIBRARIES-NOTFOUND))
-        list(REMOVE_ITEM LINKED_LIBRARIES gcov)
-        foreach(LINKED_LIB ${LINKED_LIBRARIES})
-            if(TARGET ${LINKED_LIB})
-                get_target_property(TARGET_SOURCE_DIR ${LINKED_LIB} SOURCE_DIR)
-                message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCE_DIR:\"${TARGET_SOURCE_DIR}\"")
-                get_target_property(TARGET_SOURCES ${LINKED_LIB} SOURCES)
-                message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCES:${TARGET_SOURCES}")
-                if(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
-                    get_target_property(TARGET_BINARY_DIR ${LINKED_LIB} BINARY_DIR)
-                    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${LINKED_LIB} has binary dir:\"${TARGET_BINARY_DIR}\"")
-                    if(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
-                        get_target_property(TARGET_NAME ${LINKED_LIB} NAME)
-                        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${LINKED_LIB}: has name: \"${TARGET_NAME}\"")
-                        if(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
-                            foreach(SOURCE ${TARGET_SOURCES})
-                                set(SOURCE_GCDA_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcda")
-                                set(SOURCE_GCNO_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcno")
-                                list(APPEND TARGET_GCDA_FILES "${SOURCE_GCDA_FILE}")
-                                list(APPEND TARGET_GCNO_FILES "${SOURCE_GCNO_FILE}")
-                            endforeach(SOURCE ${TARGET_SOURCES})
-                        endif(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
-                    endif(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
-                endif(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
-            endif(TARGET ${LINKED_LIB})
-        endforeach(LINKED_LIB ${LINKED_LIBRARIES})
-    endif(NOT (LINKED_LIBRARIES STREQUAL LINKED_LIBRARIES-NOTFOUND))
-    
+
+    list(REMOVE_ITEM LINKED_LIBRARIES gcov)
+    foreach(TARGET ${_TARGETS})
+        if(TARGET ${TARGET})
+            get_target_property(TARGET_SOURCE_DIR ${TARGET} SOURCE_DIR)
+            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCE_DIR:\"${TARGET_SOURCE_DIR}\"")
+            get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
+            message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCES:${TARGET_SOURCES}")
+            if(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
+                get_target_property(TARGET_BINARY_DIR ${TARGET} BINARY_DIR)
+                message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${TARGET} has binary dir:\"${TARGET_BINARY_DIR}\"")
+                if(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
+                    get_target_property(TARGET_NAME ${TARGET} NAME)
+                    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${TARGET}: has name: \"${TARGET_NAME}\"")
+                    if(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
+                        foreach(SOURCE ${TARGET_SOURCES})
+                            set(SOURCE_GCDA_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcda")
+                            set(SOURCE_GCNO_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcno")
+                            set(TARGET_GCDA_FILES "${TARGET_GCDA_FILES}\;${SOURCE_GCDA_FILE}")
+                            set(TARGET_GCNO_FILES "${TARGET_GCNO_FILES}\;${SOURCE_GCNO_FILE}")
+                        endforeach(SOURCE ${TARGET_SOURCES})
+                    endif(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
+                endif(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
+            endif(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
+        endif(TARGET ${TARGET})
+    endforeach(TARGET ${_TARGETS})
+
+
     set(GCDA_SCRIPT "\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE ${TARGET_GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}set(GCDA_FILES \"${TARGET_GCDA_FILES}\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE \${GCDA_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tif(EXISTS \"\${GCDA_FILE}\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tfile(COPY_FILE \${GCDA_FILE} ${COVERAGE_DIR}/\${GCDA_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\telse()\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tmessage(WARNING \"File: \\\"\${GCDA_FILE}}\\\" does not exist.\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tendif(EXISTS \"\${GCDA_FILE}\")\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE ${TARGET_GCDA_FILES})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE ${TARGET_GCNO_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE \${GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}set(GCNO_FILES \"${TARGET_GCNO_FILES}\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE \${GCNO_FILES})\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}if(EXISTS \"\${GCNO_FILE}\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCNO_FILENAME \${GCNO_FILE} NAME)\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${COVERAGE_DIR}/\${GCNO_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\telse()\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tmessage(WARNING \"File: \\\"\${GCNO_FILE}}\\\" does not exist.\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}endif(EXISTS \"\${GCNO_FILE}\")\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE ${TARGET_GCNO_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE \${GCNO_FILES})\n")
     set(TEST_RUNNER_GCDA_SCRIPT ${COVERAGE_DIR}/${_TEST_RUNNER}-gcda.cmake)
     file(WRITE ${TEST_RUNNER_GCDA_SCRIPT}  ${GCDA_SCRIPT})
     add_custom_command(
@@ -851,7 +870,7 @@ function(GnuCoverage_add_report_target)
 
             math(EXPR MIN_LINE_PERCENT_EVALUATED ${_MIN_LINE_PERCENT})
             set(LINE_COVERAGE_CHECK_SCRIPT_ABSPATH "${COVERAGE_DIR}/line_coverage_check.sh")
-            set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            set(LINE_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_LINE_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} lines | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Line execution coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of lines must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Line execution coverage check passed (Currently \${COVERAGE_PERCENT}% lines covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} ${LINE_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH} 
                 PERMISSIONS 
@@ -862,7 +881,7 @@ function(GnuCoverage_add_report_target)
 
             math(EXPR MIN_FUNC_PERCENT_EVALUATED ${_MIN_FUNC_PERCENT})
             set(FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH "${COVERAGE_DIR}/function_coverage_check.sh")
-            set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Code coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Code coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
+            set(FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT "#!/bin/bash\nMINIMUM_COVERAGE_PERCENT=\$(echo \"${MIN_FUNC_PERCENT_EVALUATED}\" | ${SED} \'s/%//\'| ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nCOVERAGE_PERCENT=\$(${CAT} \"${COVERAGE_SUMMARY_FILE_ABSPATH}\" | ${GREP} \"%\" | ${GREP} functions | ${GREP} -o \".*%\" | ${AWK} \'{ print \$2}\' | ${SED} \'s/%//\' | ${AWK} \'BEGIN { FS=\".\" } { print \$1 }\')\nif [ \${MINIMUM_COVERAGE_PERCENT} -gt \${COVERAGE_PERCENT} ]\; then\n\techo \"Function execution coverage check failed! At least \${MINIMUM_COVERAGE_PERCENT}% of functions must be covered by execution of ${TEST_RUNNER_ABSPATH} to pass (Currently \${COVERAGE_PERCENT}%)\"\n\texit -1\nfi\necho \"Function execution coverage check passed (Currently \${COVERAGE_PERCENT}% functions covered by execution of ${TEST_RUNNER_ABSPATH})!\"\nexit 0")
             file(WRITE ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} ${FUNCTION_COVERAGE_CHECK_SCRIPT_CONTENT})
             file(CHMOD ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH} 
                 PERMISSIONS 
@@ -875,7 +894,6 @@ function(GnuCoverage_add_report_target)
                 COMMAND ${LCOV_EXECUTABLE} --summary ${COVERAGE_INFO_FILE_CLEANED} > ${COVERAGE_SUMMARY_FILE_ABSPATH}
                 COMMAND ${LINE_COVERAGE_CHECK_SCRIPT_ABSPATH}
                 COMMAND ${FUNCTION_COVERAGE_CHECK_SCRIPT_ABSPATH}
-                COMMAND ${CMAKE_COMMAND} -E remove ${COVERAGE_INFO_FILE} ${COVERAGE_INFO_FILE_CLEANED}
                 DEPENDS ${_COVERAGE_TARGET}-clean
                 COMMENT "Generating code coverage summary file and checking code coverage requirements ..."
                 BYPRODUCTS ${COVERAGE_SUMMARY_FILE_ABSPATH}
