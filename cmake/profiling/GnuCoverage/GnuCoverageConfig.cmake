@@ -717,23 +717,66 @@ function(GnuCoverage_add_report_target)
     # - We explicitly do not use CMAKE_CURRENT_BINARY_DIR when searching
     #       - it doesnt work in many cases depending on where the targets 
     #         that TEST_RUNNER has been linked against are defined/declared
+
+    get_target_property(LINKED_LIBRARIES ${_TEST_RUNNER} LINK_LIBRARIES)
+    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], LINKED_LIBRARIES:${LINKED_LIBRARIES}")
+
+
+    # WE ARE COPYING THE .gcda and .gcno files into ${COVERAGE_DIR}.
+    # TODO: Tell gcc to emit the files into ${COVERAGE_DIR} in the first place so we don't have to do this
+    # https://stackoverflow.com/questions/63360206/gcov-gcda-file-generated-in-different-folder
+    #
+    # https://gcc.gnu.org/onlinedocs/gcc-10.1.0/gcc/Instrumentation-Options.html
+    set(TARGET_GCNO_FILES) # empty list
+    set(TARGET_GCDA_FILES) # empty list
+    if(NOT (LINKED_LIBRARIES STREQUAL LINKED_LIBRARIES-NOTFOUND))
+        list(REMOVE_ITEM LINKED_LIBRARIES gcov)
+        foreach(LINKED_LIB ${LINKED_LIBRARIES})
+            if(TARGET ${LINKED_LIB})
+                get_target_property(TARGET_SOURCE_DIR ${LINKED_LIB} SOURCE_DIR)
+                message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCE_DIR:\"${TARGET_SOURCE_DIR}\"")
+                get_target_property(TARGET_SOURCES ${LINKED_LIB} SOURCES)
+                message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], TARGET_SOURCES:${TARGET_SOURCES}")
+                if(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
+                    get_target_property(TARGET_BINARY_DIR ${LINKED_LIB} BINARY_DIR)
+                    message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${LINKED_LIB} has binary dir:\"${TARGET_BINARY_DIR}\"")
+                    if(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
+                        get_target_property(TARGET_NAME ${LINKED_LIB} NAME)
+                        message(DEBUG "[ in ${CMAKE_CURRENT_FUNCTION} ], Target:${LINKED_LIB}: has name: \"${TARGET_NAME}\"")
+                        if(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
+                            foreach(SOURCE ${TARGET_SOURCES})
+                                set(SOURCE_GCDA_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcda")
+                                set(SOURCE_GCNO_FILE "${TARGET_BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${SOURCE}.gcno")
+                                list(APPEND TARGET_GCDA_FILES "${SOURCE_GCDA_FILE}")
+                                list(APPEND TARGET_GCNO_FILES "${SOURCE_GCNO_FILE}")
+                            endforeach(SOURCE ${TARGET_SOURCES})
+                        endif(NOT (TARGET_NAME STREQUAL TARGET_NAME-NOTFOUND))
+                    endif(NOT (TARGET_BINARY_DIR STREQUAL TARGET_BINARY_DIR-NOTFOUND))
+                endif(NOT (TARGET_SOURCES STREQUAL TARGET_SOURCES-NOTFOUND))
+            endif(TARGET ${LINKED_LIB})
+        endforeach(LINKED_LIB ${LINKED_LIBRARIES})
+    endif(NOT (LINKED_LIBRARIES STREQUAL LINKED_LIBRARIES-NOTFOUND))
+    
     set(GCDA_SCRIPT "\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}cmake_minimum_required(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCDA_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcda\")\n") 
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE \${GCDA_FILES})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCDA_FILE} ${COVERAGE_DIR}/\${GCDA_FILENAME})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE \${GCDA_FILES})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}file(GLOB_RECURSE GCNO_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*\.gcno\")\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE \${GCNO_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCDA_FILE ${TARGET_GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tif(EXISTS \"\${GCDA_FILE}\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tget_filename_component(GCDA_FILENAME \${GCDA_FILE} NAME)\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\t\tfile(COPY_FILE \${GCDA_FILE} ${COVERAGE_DIR}/\${GCDA_FILENAME})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}\tendif(EXISTS \"\${GCDA_FILE}\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCDA_FILE ${TARGET_GCDA_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}foreach(GCNO_FILE ${TARGET_GCNO_FILES})\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}if(EXISTS \"\${GCNO_FILE}\")\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tget_filename_component(GCNO_FILENAME \${GCNO_FILE} NAME)\n")
     set(GCDA_SCRIPT "${GCDA_SCRIPT}\tfile(COPY_FILE \${GCNO_FILE} ${COVERAGE_DIR}/\${GCNO_FILENAME})\n")
-    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE \${GCNO_FILES})\n")
-    file(WRITE ${COVERAGE_DIR}/gcda.cmake ${GCDA_SCRIPT})
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endif(EXISTS \"\${GCNO_FILE}\")\n")
+    set(GCDA_SCRIPT "${GCDA_SCRIPT}endforeach(GCNO_FILE ${TARGET_GCNO_FILES})\n")
+    set(TEST_RUNNER_GCDA_SCRIPT ${COVERAGE_DIR}/${_TEST_RUNNER}-gcda.cmake)
+    file(WRITE ${TEST_RUNNER_GCDA_SCRIPT}  ${GCDA_SCRIPT})
     add_custom_command(
         TARGET ${_COVERAGE_TARGET}-execute
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -P ${COVERAGE_DIR}/gcda.cmake
+        COMMAND ${CMAKE_COMMAND} -P ${TEST_RUNNER_GCDA_SCRIPT}
     )
 
     add_custom_target(${_COVERAGE_TARGET}-capture

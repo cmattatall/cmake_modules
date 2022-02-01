@@ -183,7 +183,6 @@ function run_tests () {
 
     set +e
     for cmakelists in $(find tests -name "*CMakeLists\.txt"); do
-    
         local TESTCASE_CMAKE_SOURCE_DIR=$(dirname ${cmakelists})
         local TESTCASE_CMAKE_BUILD_DIR="${TESTCASE_CMAKE_SOURCE_DIR}/build"
 
