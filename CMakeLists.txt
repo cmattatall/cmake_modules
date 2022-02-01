@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(CMateModules
-    VERSION 1.6.5
+    VERSION 1.6.6
     DESCRIPTION "A Collection of my own (hopeully) useful cmake modules to make cmake friendlier!"
 )
 

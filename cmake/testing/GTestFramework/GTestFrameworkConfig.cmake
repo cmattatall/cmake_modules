@@ -43,47 +43,49 @@ cmake_minimum_required(VERSION 3.21)
 #
 ################################################################################
 
+
 function(GTestFramework_init)
+    if(NOT TARGET GTestFramework)
+        add_library(GTestFramework INTERFACE)
+        message(STATUS "Checking for package \"GTest\" ... ")
+        find_package(GTest)
+        include(GoogleTest)
+        if(NOT GTest_FOUND)
+            message(STATUS "Package \"GTest\" not found on disk. Downloading and building from source now ... ")
+            find_package(Git REQUIRED)
+            include(FetchContent)
+            set(FETCHCONTENT_QUIET OFF)
 
-    add_library(GTestFramework INTERFACE)
-
-    message(STATUS "Checking for package \"GTest\" ... ")
-    find_package(GTest)
-    include(GoogleTest)
-    if(NOT GTest_FOUND)
-        message(STATUS "Package \"GTest\" not found on disk. Downloading and building from source now ... ")
-        find_package(Git REQUIRED)
-        include(FetchContent)
-        set(FETCHCONTENT_QUIET OFF)
-
-        FetchContent_Declare(
-            googletest
-            GIT_REPOSITORY https://github.com/google/googletest.git
-            GIT_TAG        2f80c2ba71c0e8922a03b9b855e5b019ad1f7064 # release-1.10.0
-        )
-        FetchContent_MakeAvailable(googletest)
+            FetchContent_Declare(
+                googletest
+                GIT_REPOSITORY https://github.com/google/googletest.git
+                GIT_TAG        2f80c2ba71c0e8922a03b9b855e5b019ad1f7064 # release-1.10.0
+            )
+            FetchContent_MakeAvailable(googletest)
 
 
-        target_link_libraries(GTestFramework 
-            INTERFACE 
-                gtest_main 
-                gtest
-                gmock
-        )
+            target_link_libraries(GTestFramework 
+                INTERFACE 
+                    gtest_main 
+                    gtest
+                    gmock
+            )
 
-        # Disable linting and static analysis on third-party library sources.
-        set_target_properties(GTestFramework PROPERTIES CXX_CLANG_TIDY "")
+            # Disable linting and static analysis on third-party library sources.
+            set_target_properties(GTestFramework PROPERTIES CXX_CLANG_TIDY "")
 
-    else()
-        message(STATUS "Ok.")
-        message(STATUS "") # stdout formatting
+        else()
+            message(STATUS "Ok.")
+            message(STATUS "") # stdout formatting
 
-        target_link_libraries(GTestFramework 
-            INTERFACE 
-                GTest::Main 
-                GTest::GTest
-        )
-    endif(NOT GTest_FOUND)
+            target_link_libraries(GTestFramework 
+                INTERFACE 
+                    GTest::Main 
+                    GTest::GTest
+            )
+        endif(NOT GTest_FOUND)
+
+    endif(NOT TARGET GTestFramework)
 endfunction(GTestFramework_init)
 
 
