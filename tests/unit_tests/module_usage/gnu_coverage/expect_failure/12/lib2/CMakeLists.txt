@@ -12,7 +12,7 @@ target_include_directories(lib2 PUBLIC include)
 add_executable(lib2_test_runner src/lib2_test_runner.cpp)
 target_link_libraries(lib2_test_runner PRIVATE lib2)
 
-set(EXPECTED_COVERAGE 33)
+set(EXPECTED_COVERAGE 36) # There is 33% coverage in lib2 so we expect this test to fail
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     lib2_test_runner-coverage                                          
     TEST_RUNNER         lib2_test_runner

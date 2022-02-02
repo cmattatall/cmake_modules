@@ -35,16 +35,12 @@ GnuCoverage_init()
 add_library(lib_to_profile src/lib_to_profile.cpp)
 target_include_directories(lib_to_profile PUBLIC include/)
 add_executable(test_runner src/test_runner.cpp)
-target_link_libraries(test_runner PRIVATE lib_to_profile)
 
-
-GnuCoverage_target_add_coverage_definitions(
-    TARGET lib_to_profile
-)
 
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     coverage                                          
-    TEST_RUNNER         test_runner                                        
+    TEST_RUNNER         test_runner
+    TARGETS     lib_to_profile                                    
     COVERAGE_FILENAME   #coverage-report # <-- COVERAGE_FILENAME is a deprecated parameter but we can keep the test 
     POST_BUILD                                                                                     
 )   

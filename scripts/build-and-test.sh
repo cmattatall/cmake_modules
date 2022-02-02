@@ -4,6 +4,7 @@ ABORT_ON_FAILURE="ON" # change this to continue running even when a test fails
 POST_TEST_CLEANUP="ON" # Set to "ON" to remove the build directory of tests
 DEBUG_TESTS="OFF"       # Set to "ON" to enable a very verbose cmake configure and build output 
 CMAKELISTS_TO_TEST=$(find tests -name "*CMakeLists\.txt")
+#CMAKELISTS_TO_TEST=/home/carl/Desktop/personal/cmake_modules/tests/unit_tests/module_usage/gnu_coverage/expect_success/5/CMakeLists.txt
 
 WORKDIR=$(pwd)
 THIS_SCRIPT=$0
@@ -183,7 +184,7 @@ function run_tests () {
     [ ! -d "${TEST_LOGGING_DIR}" ] && mkdir -p "${TEST_LOGGING_DIR}"
 
     set +e
-    for cmakelists in CMAKELISTS_TO_TEST; do
+    for cmakelists in ${CMAKELISTS_TO_TEST[@]}; do
         local TESTCASE_CMAKE_SOURCE_DIR=$(dirname ${cmakelists})
         local TESTCASE_CMAKE_BUILD_DIR="${TESTCASE_CMAKE_SOURCE_DIR}/build"
 

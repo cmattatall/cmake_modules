@@ -38,13 +38,12 @@ add_executable(test_runner src/test_runner.cpp)
 target_link_libraries(test_runner PRIVATE lib_to_profile)
 
 
-GnuCoverage_target_add_coverage_definitions(
-    TARGET #lib_to_profile
-)
+
 
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     coverage                                          
-    TEST_RUNNER         test_runner                                        
+    TEST_RUNNER         test_runner  
+    TARGETS             #lib_to_profile # target unspecified - test should fail                                      
     POST_BUILD                                                                                     
 )   
 

@@ -35,13 +35,6 @@ GnuCoverage_init()
 add_library(lib_to_profile src/lib1_to_profile.cpp src/lib2_to_profile.cpp)
 target_include_directories(lib_to_profile PUBLIC include/)
 add_executable(test_runner src/test_runner.cpp)
-target_link_libraries(test_runner PRIVATE lib_to_profile)
-
-
-GnuCoverage_target_add_coverage_definitions(
-    TARGET lib_to_profile
-)
-
 
 # WE EXPECT THIS TO FAIL BECAUSE IN src, 
 # the test runner only covers 1/3 functions
@@ -49,5 +42,6 @@ GnuCoverage_target_add_coverage_definitions(
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     coverage                                          
     TEST_RUNNER         test_runner
+    TARGETS             lib_to_profile
     POST_BUILD                                                                                     
 )   

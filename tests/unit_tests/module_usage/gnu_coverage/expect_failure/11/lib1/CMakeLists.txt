@@ -9,17 +9,17 @@ add_library(lib1)
 target_sources(lib1 PRIVATE src/lib1.cpp)
 target_include_directories(lib1 PUBLIC include)
 
-GnuCoverage_target_add_coverage_definitions(
-    TARGET lib1
-)
 
 
-
+# If you look at the source code for the test 
+# runner, less than 50% of lines and functions are covered. 
+# This test should fail because the default minimum coverage is 50% 
+# when arguments MIN_LINE_PERCENT and MIN_FUNC_PERCENT are unspecified.
 add_executable(lib1_test_runner src/lib1_test_runner.cpp)
-target_link_libraries(lib1_test_runner PRIVATE lib1)
 
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     lib1_test_runner-coverage                                          
     TEST_RUNNER         lib1_test_runner
+    TARGETS             lib1
     POST_BUILD                                        
 )

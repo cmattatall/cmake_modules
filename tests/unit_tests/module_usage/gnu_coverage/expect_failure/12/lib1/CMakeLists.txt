@@ -10,7 +10,7 @@ target_sources(lib1 PRIVATE src/lib1.cpp)
 target_include_directories(lib1 PUBLIC include)
 
 
-set(EXPECTED_COVERAGE 66)
+set(EXPECTED_COVERAGE 66) # We expect this to pass (but lib2 to fail because it has 33% coverage and the min is set at 36)
 add_executable(lib1_test_runner src/lib1_test_runner.cpp)
 GnuCoverage_add_report_target(                                            
     COVERAGE_TARGET     lib1_test_runner-coverage                                          
